@@ -1,0 +1,18 @@
+# Beyond AI — yente Manifest
+# Öffentliche OpenSanctions-Daten (non-commercial, kostenfrei)
+# Direkte FtM-Entity-URLs: https://data.opensanctions.org
+
+datasets:
+  - name: default
+    title: "Beyond AI — Sanctions & PEP Screening"
+    datasets:
+      - sanctions
+      - peps
+
+  - name: sanctions
+    title: "Consolidated Sanctions"
+    entities_url: https://data.opensanctions.org/datasets/latest/sanctions/entities.ftm.json
+
+  - name: peps
+    title: "Politically Exposed Persons"
+    entities_url: https://data.opensanctions.org/datasets/latest/peps/entities.ftm.json

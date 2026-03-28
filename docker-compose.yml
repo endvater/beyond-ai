@@ -36,9 +36,12 @@ services:
       yente-es:
         condition: service_healthy
     environment:
-      YENTE_ELASTICSEARCH__URL: http://yente-es:9200
-      # Für kommerzielle Nutzung: YENTE_TOKEN setzen
-      # YENTE_TOKEN: ${OPENSANCTIONS_TOKEN:-}
+      YENTE_INDEX_URL: http://yente-es:9200
+      YENTE_MANIFEST: /data/manifest.yml
+      # Für kommerzielle Nutzung: YENTE_DATA_TOKEN setzen
+      # YENTE_DATA_TOKEN: ${OPENSANCTIONS_TOKEN:-}
+    volumes:
+      - ./data/yente:/data:ro
     restart: unless-stopped
 
   yente-es:
