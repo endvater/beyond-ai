@@ -239,13 +239,20 @@ async def screen(req: ScreenRequest):
     """Screen a name against OpenSanctions lists via yente."""
     try:
         results = await _query_yente(req.name, req.threshold)
-    except httpx.ConnectError:
+    except httpx.ConnectError as e:
         raise HTTPException(
             status_code=503,
             detail=f"yente service not reachable at {YENTE_URL}.",
-        )
+        ) from e
+    except httpx.TimeoutException as e:
+        raise HTTPException(
+            status_code=504,
+            detail=f"yente request timed out at {YENTE_URL}.",
+        ) from e
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=503, detail=f"yente request failed: {e}") from e
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=502, detail=f"yente error: {e}")
+        raise HTTPException(status_code=502, detail=f"yente error: {e}") from e
 
     matches = [
         ScreenMatch(
