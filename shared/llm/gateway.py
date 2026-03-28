@@ -6,9 +6,9 @@ Follows FinRegAgents confidence-aware pattern.
 """
 
 import os
-import json
-import httpx
 from dataclasses import dataclass
+
+import httpx
 
 
 @dataclass
