@@ -1,0 +1,38 @@
+# Beyond AI — .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Environment
+.env
+
+# Data (bulk downloads, not tracked)
+data/
+*.csv
+*.json.gz
+!.env.example
+
+# Neo4j
+neo4j_data/
+
+# Docker
+docker-compose.override.yml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter / Kaggle
+.ipynb_checkpoints/
