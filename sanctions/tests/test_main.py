@@ -4,13 +4,13 @@ Sprint 1: Grundlegende Unit-Tests ohne externe Services.
 """
 
 import html
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from sanctions.src.main import app
+from sanctions.src.main import _query_yente, app
 
 client = TestClient(app)
 
@@ -60,6 +60,48 @@ def test_search_ui_escapes_query_and_result_fields():
     assert html.escape(payload, quote=True) in response.text
     assert "&lt;b&gt;Bad&lt;/b&gt;" in response.text
     assert "&lt;img src=x onerror=alert(1)&gt;" in response.text
+
+
+def test_search_ui_whitespace_query_shows_validation_error():
+    """Whitespace-only Queries duerfen nicht als cleanes Screening erscheinen."""
+    with patch("sanctions.src.main._query_yente", new=AsyncMock()) as query_mock:
+        response = client.get("/search", params={"q": "   "})
+
+    assert response.status_code == 200
+    query_mock.assert_not_called()
+    assert "Bitte einen Namen eingeben." in response.text
+    assert "Keine Treffer" not in response.text
+
+
+@pytest.mark.asyncio
+async def test_query_yente_screens_persons_and_organizations():
+    """Organisationen werden neben Personen gegen yente abgefragt."""
+    fake_response = Mock()
+    fake_response.raise_for_status = Mock()
+    fake_response.json.return_value = {
+        "responses": {
+            "person": {"results": []},
+            "organization": {
+                "results": [
+                    {
+                        "id": "org-1",
+                        "caption": "JOINT STOCK COMPANY SBERBANK",
+                        "score": 1.0,
+                        "datasets": ["sanctions"],
+                        "properties": {"name": ["Sberbank"]},
+                    }
+                ]
+            },
+        }
+    }
+
+    with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=fake_response)) as post_mock:
+        results = await _query_yente("Sberbank")
+
+    assert results[0]["id"] == "org-1"
+    queries = post_mock.await_args.kwargs["json"]["queries"]
+    assert queries["person"]["schema"] == "Person"
+    assert queries["organization"]["schema"] == "Organization"
 
 
 @pytest.mark.asyncio
@@ -119,6 +161,12 @@ def test_screen_timeout_returns_gateway_timeout():
     assert response.json() == {
         "detail": "yente request timed out at http://localhost:8100."
     }
+
+
+def test_screen_blank_name_rejected():
+    """Leere oder whitespace-only Namen sind ungueltig."""
+    response = client.post("/api/screen", json={"name": "   "})
+    assert response.status_code == 422
 
 
 def test_screen_missing_body():
