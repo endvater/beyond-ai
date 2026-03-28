@@ -5,6 +5,7 @@ Sprint 1: Grundlegende Unit-Tests ohne externe Services.
 
 from unittest.mock import AsyncMock, patch
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -75,6 +76,23 @@ async def test_screen_no_matches():
     data = response.json()
     assert data["total"] == 0
     assert data["matches"] == []
+
+
+def test_screen_timeout_returns_gateway_timeout():
+    """Timeouts von yente werden als 504 statt als 500 zurueckgegeben."""
+    with patch(
+        "sanctions.src.main._query_yente",
+        new=AsyncMock(side_effect=httpx.ReadTimeout("timed out")),
+    ):
+        response = client.post(
+            "/api/screen",
+            json={"name": "Max Mustermann"},
+        )
+
+    assert response.status_code == 504
+    assert response.json() == {
+        "detail": "yente request timed out at http://localhost:8100."
+    }
 
 
 def test_screen_missing_body():
