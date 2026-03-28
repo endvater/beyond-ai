@@ -3,6 +3,7 @@ Beyond AI — Sanctions Screener Tests
 Sprint 1: Grundlegende Unit-Tests ohne externe Services.
 """
 
+import html
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -34,6 +35,31 @@ def test_search_ui_with_query():
     response = client.get("/search?q=TestPerson")
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
+
+
+def test_search_ui_escapes_query_and_result_fields():
+    """Query und Trefferdaten werden HTML-escaped gerendert."""
+    payload = '\"><script>alert(1)</script>'
+    mock_results = [
+        {
+            "id": "<id>",
+            "caption": "<b>Bad</b>",
+            "score": 0.9,
+            "datasets": ["sanctions"],
+            "properties": {"notes": ['<img src=x onerror=alert(1)>']},
+        }
+    ]
+
+    with patch("sanctions.src.main._query_yente", new=AsyncMock(return_value=mock_results)):
+        response = client.get("/search", params={"q": payload})
+
+    assert response.status_code == 200
+    assert payload not in response.text
+    assert "<b>Bad</b>" not in response.text
+    assert "<img src=x onerror=alert(1)>" not in response.text
+    assert html.escape(payload, quote=True) in response.text
+    assert "&lt;b&gt;Bad&lt;/b&gt;" in response.text
+    assert "&lt;img src=x onerror=alert(1)&gt;" in response.text
 
 
 @pytest.mark.asyncio
