@@ -18,10 +18,10 @@ Dieses Repository ist der Beweis, dass die Technologie reif ist — und dass der
 
 | Modul | Status | Beschreibung | Kill Target |
 |-------|--------|-------------|-------------|
-| [`sanctions/`](./sanctions/) | 🔴 Sprint 1 | Sanctions & PEP Screening auf Basis von OpenSanctions + LLM Name Matching | Dow Jones R&C, World-Check, Sanction Scanner |
-| [`horizon/`](./horizon/) | ⚪ Geplant | Regulatory Horizon Scanner — EUR-Lex, BaFin, EBA/ESMA automatisch gescrapt und LLM-klassifiziert | VÖB RADAR, CUBE, msg LCM |
-| [`osint/`](./osint/) | ⚪ Geplant | Adverse Media & OSINT — RSS-Aggregation, LLM-Klassifikation, Entity Resolution | LexisNexis, Quantexa, Chainalysis |
-| [`shared/`](./shared/) | 🟡 Basis | Gemeinsame Infrastruktur: Neo4j-Connector, LLM-Gateway, Confidence Framework, Config | — |
+| [`sanctions/`](sanctions) | 🔴 Sprint 1 | Sanctions & PEP Screening auf Basis von OpenSanctions + LLM Name Matching | Dow Jones R&C, World-Check, Sanction Scanner |
+| [`horizon/`](horizon) | ⚪ Geplant | Regulatory Horizon Scanner — EUR-Lex, BaFin, EBA/ESMA automatisch gescrapt und LLM-klassifiziert | VÖB RADAR, CUBE, msg LCM |
+| [`osint/`](osint) | ⚪ Geplant | Adverse Media & OSINT — RSS-Aggregation, LLM-Klassifikation, Entity Resolution | LexisNexis, Quantexa, Chainalysis |
+| [`shared/`](shared) | 🟡 Basis | Gemeinsame Infrastruktur: Neo4j-Connector, LLM-Gateway, Confidence Framework, Config | — |
 
 ## Architektur
 
@@ -135,6 +135,7 @@ git push origin feature/mein-beitrag
 ```
 
 Wir freuen uns über:
+
 - **Code** — Module, Bugfixes, Tests, Integrationen
 - **Datenquellen** — Weitere öffentliche Quellen identifizieren und Scraper bauen
 - **Domänenwissen** — Compliance-Officers, GwB, Regulierungsjuristen: Issues mit fachlichen Anforderungen
@@ -142,7 +143,11 @@ Wir freuen uns über:
 
 ## Lizenz
 
-MIT License — siehe [LICENSE](./LICENSE).
+Licensed under the **Apache License, Version 2.0** — siehe [LICENSE](LICENSE) und [NOTICE](NOTICE).
+
+Du darfst den Code frei verwenden, modifizieren und verteilen — auch kommerziell — unter den Bedingungen der Apache 2.0 Lizenz. Diese beinhaltet eine explizite Patentlizenz und einen Patent-Retaliation-Mechanismus, der das Projekt und seine Nutzer schützt.
+
+**Warum Apache 2.0?** Beyond AI zielt auf den Einsatz in regulierten Finanzinstituten. Apache 2.0 bietet die rechtliche Klarheit die Enterprise-Rechtsabteilungen erwarten: expliziter Patent-Grant, Contributor-Patentlizenz und Kompatibilität mit den Compliance-Anforderungen institutioneller Nutzer.
 
 Die Daten von OpenSanctions unterliegen deren eigener [Lizenz](https://www.opensanctions.org/licensing/) (frei für nicht-kommerzielle Nutzung, Datenlizenz für kommerzielle Nutzung erforderlich).
 
