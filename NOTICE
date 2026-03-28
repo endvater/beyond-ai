@@ -1,0 +1,33 @@
+Beyond AI
+Copyright 2026 Jürgen Schiller García / FinCrime Watchdog
+
+This product is licensed under the Apache License, Version 2.0.
+https://www.apache.org/licenses/LICENSE-2.0
+
+---
+
+This project includes or depends on the following third-party components:
+
+OpenSanctions (https://www.opensanctions.org/)
+  License: OpenSanctions Data License
+  https://www.opensanctions.org/licensing/
+  Free for non-commercial use. Commercial data license required for
+  commercial use of the dataset.
+
+yente (https://github.com/opensanctions/yente)
+  License: MIT License
+  Copyright (c) OpenSanctions contributors
+
+FollowTheMoney (https://followthemoney.tech/)
+  License: MIT License
+  Copyright (c) OCCRP and contributors
+
+FinRegAgents (https://github.com/endvater/finreg-agents)
+  License: Apache License, Version 2.0
+  Copyright (c) 2025–2026 Jürgen Schiller García
+
+---
+
+FinCrime Watchdog — https://watchdog.endvater.de
+Unabhängiger, KI-gestützter Datenjournalismus für Financial Crime
+und Regulatory Compliance im DACH-Raum.
