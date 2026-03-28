@@ -7,6 +7,7 @@ Konfiguration via Umgebungsvariablen oder .env-Datei.
 
 import os
 from contextlib import contextmanager
+
 from neo4j import GraphDatabase
 
 
