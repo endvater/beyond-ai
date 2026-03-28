@@ -7,11 +7,12 @@ Sprint 1: Name screening against OpenSanctions (yente) with LLM enhancement.
 import html as html_lib
 import json
 import os
+from typing import Annotated
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, StringConstraints
 
 app = FastAPI(
     title="Beyond AI — Sanctions Screener",
@@ -20,10 +21,20 @@ app = FastAPI(
 )
 
 YENTE_URL = os.getenv("YENTE_URL", "http://localhost:8100")
+YENTE_MATCH_LIMIT = 10
+YENTE_QUERY_SCHEMAS = {
+    "person": "Person",
+    "organization": "Organization",
+}
+
+ScreenName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1),
+]
 
 
 class ScreenRequest(BaseModel):
-    name: str
+    name: ScreenName
     threshold: float = 0.7
 
 
@@ -42,21 +53,41 @@ class ScreenResponse(BaseModel):
 
 
 async def _query_yente(name: str, threshold: float = 0.7) -> list[dict]:
+    query_name = name.strip()
+    queries = {
+        query_id: {
+            "schema": schema,
+            "properties": {"name": [query_name]},
+        }
+        for query_id, schema in YENTE_QUERY_SCHEMAS.items()
+    }
+
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
             f"{YENTE_URL}/match/default",
-            params={"threshold": threshold, "limit": 10},
-            json={
-                "queries": {
-                    "q1": {
-                        "schema": "Person",
-                        "properties": {"name": [name]},
-                    }
-                }
-            },
+            params={"threshold": threshold, "limit": YENTE_MATCH_LIMIT},
+            json={"queries": queries},
         )
         resp.raise_for_status()
-        return resp.json().get("responses", {}).get("q1", {}).get("results", [])
+
+    responses = resp.json().get("responses", {})
+    combined_results = []
+    seen_matches = set()
+
+    for query_id in queries:
+        for result in responses.get(query_id, {}).get("results", []):
+            match_key = (
+                str(result.get("id", "")),
+                tuple(sorted(str(dataset) for dataset in result.get("datasets", []))),
+                str(result.get("caption", result.get("name", ""))),
+            )
+            if match_key in seen_matches:
+                continue
+            seen_matches.add(match_key)
+            combined_results.append(result)
+
+    combined_results.sort(key=lambda result: result.get("score", 0.0), reverse=True)
+    return combined_results[:YENTE_MATCH_LIMIT]
 
 
 @app.get("/health")
@@ -70,13 +101,16 @@ async def search_ui(request: Request, q: str = "", threshold: float = 0.7):
     matches = []
     error = None
     raw_json = ""
+    normalized_query = q.strip()
 
     def escape_text(value: object) -> str:
         return html_lib.escape(str(value), quote=True)
 
-    if q:
+    if q and not normalized_query:
+        error = "Bitte einen Namen eingeben."
+    elif normalized_query:
         try:
-            results = await _query_yente(q, threshold)
+            results = await _query_yente(normalized_query, threshold)
             matches = [
                 {
                     "id": r.get("id", ""),
@@ -88,7 +122,11 @@ async def search_ui(request: Request, q: str = "", threshold: float = 0.7):
                 for r in results
             ]
             raw_json = json.dumps(
-                {"query": q, "total": len(matches), "matches": matches},
+                {
+                    "query": normalized_query,
+                    "total": len(matches),
+                    "matches": matches,
+                },
                 indent=2,
                 ensure_ascii=False,
             )
@@ -157,9 +195,13 @@ async def search_ui(request: Request, q: str = "", threshold: float = 0.7):
         </div>"""
 
     result_section = ""
-    if q and not error:
+    if normalized_query and not error:
         status_color = "text-red-600 font-semibold" if matches else "text-green-600 font-semibold"
-        status_text  = f"⚠️ {len(matches)} Treffer gefunden" if matches else "✅ Keine Treffer — Person nicht gelistet"
+        status_text  = (
+            f"⚠️ {len(matches)} Treffer gefunden"
+            if matches
+            else "✅ Keine Treffer — Entität nicht gelistet"
+        )
         result_section = f"""
         <div class="mt-2 mb-4 text-sm {status_color}">{status_text}</div>
         {match_cards if matches else ""}"""
