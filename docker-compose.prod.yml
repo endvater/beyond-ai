@@ -91,9 +91,17 @@ services:
       - ollama-net       # ollama-eksw_default → Container "ollama-eksw-ollama-1" erreichbar
     labels:
       - "traefik.enable=true"
+      # ── HTTP-Router: ACME-Challenge durchlassen + auf HTTPS umleiten ──
+      - "traefik.http.routers.beyond-ai-http.rule=Host(`sanction.endvater.de`)"
+      - "traefik.http.routers.beyond-ai-http.entrypoints=web"
+      - "traefik.http.routers.beyond-ai-http.middlewares=beyond-ai-redirect"
+      - "traefik.http.middlewares.beyond-ai-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.beyond-ai-redirect.redirectscheme.permanent=true"
+      # ── HTTPS-Router: TLS + Security Headers ──────────────────────────
       - "traefik.http.routers.beyond-ai.rule=Host(`sanction.endvater.de`)"
       - "traefik.http.routers.beyond-ai.entrypoints=websecure"
       - "traefik.http.routers.beyond-ai.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.beyond-ai.middlewares=beyond-ai-sec"
       - "traefik.http.services.beyond-ai.loadbalancer.server.port=8000"
       - "traefik.http.services.beyond-ai.loadbalancer.server.scheme=http"
       # Security Headers
@@ -102,7 +110,6 @@ services:
       - "traefik.http.middlewares.beyond-ai-sec.headers.forceSTSHeader=true"
       - "traefik.http.middlewares.beyond-ai-sec.headers.contentTypeNosniff=true"
       - "traefik.http.middlewares.beyond-ai-sec.headers.browserXssFilter=true"
-      - "traefik.http.routers.beyond-ai.middlewares=beyond-ai-sec"
 
 networks:
   beyond-ai-internal:
