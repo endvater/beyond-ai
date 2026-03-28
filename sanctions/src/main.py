@@ -4,8 +4,9 @@ Beyond AI — Sanctions Screening API
 Sprint 1: Name screening against OpenSanctions (yente) with LLM enhancement.
 """
 
-import os
 import json
+import os
+
 import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
