@@ -1,0 +1,14 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+exclude = [".git", "__pycache__", ".env"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E501",   # line too long — in Templates akzeptabel
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["sanctions/tests"]
