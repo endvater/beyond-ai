@@ -1,0 +1,121 @@
+# Beyond AI — Production Docker Compose
+# Deployment: sanction.endvater.de
+#
+# Voraussetzungen auf dem Server:
+#   - traefik-4vki läuft bereits
+#   - neo4j4ruth läuft bereits
+#   - ollama-eksw läuft bereits (kimi-k2.5:cloud)
+#
+# Vor dem Start:
+#   1. docker network ls  → TRAEFIK_NETWORK in .env eintragen
+#   2. docker ps          → NEO4J_CONTAINER_NAME prüfen
+#   3. cp .env.prod.example .env && nano .env
+
+services:
+
+  # ═══════════════════════════════════════════
+  # ElasticSearch — Suchindex für yente
+  # ═══════════════════════════════════════════
+  yente-es:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: beyond-ai-yente-es
+    expose:
+      - "9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"        # KVM 2 (bei Upgrade auf KVM 4 → -Xms2g -Xmx2g)
+    volumes:
+      - yente_es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9200/_cluster/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - beyond-ai-internal
+
+  # ═══════════════════════════════════════════
+  # yente — OpenSanctions Self-Hosted API
+  # ═══════════════════════════════════════════
+  yente:
+    image: ghcr.io/opensanctions/yente:latest
+    container_name: beyond-ai-yente
+    expose:
+      - "8000"
+    depends_on:
+      yente-es:
+        condition: service_healthy
+    environment:
+      YENTE_INDEX_URL: http://yente-es:9200
+      YENTE_MANIFEST: /data/manifest.yml
+    volumes:
+      - ./data/yente:/data:ro
+    restart: unless-stopped
+    networks:
+      - beyond-ai-internal
+
+  # ═══════════════════════════════════════════
+  # Beyond AI API — FastAPI Backend
+  # ═══════════════════════════════════════════
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: beyond-ai-api
+    expose:
+      - "8000"
+    depends_on:
+      - yente
+    environment:
+      # Neo4j: bestehende neo4j4ruth-Instanz
+      NEO4J_URI:      bolt://${NEO4J_CONTAINER_NAME}:7687
+      NEO4J_USER:     neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+      # yente: internes Netzwerk
+      YENTE_URL:      http://yente:8000
+      # Ollama: bestehende ollama-eksw-Instanz
+      OLLAMA_URL:     http://${OLLAMA_CONTAINER_NAME}:11434
+      OLLAMA_MODEL:   kimi-k2.5:cloud
+      # Optional: Claude API als Fallback
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - ./shared:/app/shared
+      - ./sanctions:/app/sanctions
+    restart: unless-stopped
+    networks:
+      - beyond-ai-internal
+      - traefik          # Traefik: proxy
+      - neo4j-net        # neo4j4ruth_default → Container "neo4j" erreichbar
+      - ollama-net       # ollama-eksw_default → Container "ollama-eksw-ollama-1" erreichbar
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.beyond-ai.rule=Host(`sanction.endvater.de`)"
+      - "traefik.http.routers.beyond-ai.entrypoints=websecure"
+      - "traefik.http.routers.beyond-ai.tls.certresolver=letsencrypt"
+      - "traefik.http.services.beyond-ai.loadbalancer.server.port=8000"
+      - "traefik.http.services.beyond-ai.loadbalancer.server.scheme=http"
+      # Security Headers
+      - "traefik.http.middlewares.beyond-ai-sec.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.beyond-ai-sec.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.beyond-ai-sec.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.beyond-ai-sec.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.beyond-ai-sec.headers.browserXssFilter=true"
+      - "traefik.http.routers.beyond-ai.middlewares=beyond-ai-sec"
+
+networks:
+  beyond-ai-internal:
+    driver: bridge
+  traefik:
+    external: true
+    name: proxy
+  neo4j-net:
+    external: true
+    name: neo4j4ruth_default
+  ollama-net:
+    external: true
+    name: ollama-eksw_default
+
+volumes:
+  yente_es_data:
