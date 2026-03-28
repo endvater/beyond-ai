@@ -4,6 +4,7 @@ Beyond AI — Sanctions Screening API
 Sprint 1: Name screening against OpenSanctions (yente) with LLM enhancement.
 """
 
+import html as html_lib
 import json
 import os
 
@@ -70,6 +71,9 @@ async def search_ui(request: Request, q: str = "", threshold: float = 0.7):
     error = None
     raw_json = ""
 
+    def escape_text(value: object) -> str:
+        return html_lib.escape(str(value), quote=True)
+
     if q:
         try:
             results = await _query_yente(q, threshold)
@@ -106,17 +110,20 @@ async def search_ui(request: Request, q: str = "", threshold: float = 0.7):
             "peps":      ("bg-orange-100 text-orange-800", "PEP"),
         }
         cls, label = colors.get(ds, ("bg-gray-100 text-gray-700", ds.upper()))
-        return f'<span class="inline-block px-2 py-0.5 rounded text-xs font-semibold {cls}">{label}</span>'
+        return (
+            f'<span class="inline-block px-2 py-0.5 rounded text-xs font-semibold {cls}">'
+            f"{escape_text(label)}</span>"
+        )
 
     def prop_row(key: str, vals: list) -> str:
         if not vals:
             return ""
-        joined = " · ".join(str(v) for v in vals[:5])
+        joined = " · ".join(escape_text(v) for v in vals[:5])
         if len(vals) > 5:
             joined += f" <span class='text-gray-400'>+{len(vals)-5} weitere</span>"
         return f"""
         <tr class="border-b border-gray-100">
-          <td class="py-1 pr-3 text-xs text-gray-500 font-medium whitespace-nowrap align-top">{key}</td>
+          <td class="py-1 pr-3 text-xs text-gray-500 font-medium whitespace-nowrap align-top">{escape_text(key)}</td>
           <td class="py-1 text-xs text-gray-800 break-words">{joined}</td>
         </tr>"""
 
@@ -130,13 +137,15 @@ async def search_ui(request: Request, q: str = "", threshold: float = 0.7):
         color = score_color(m["score"])
         props = m.get("properties", {})
         rows = "".join(prop_row(k, props.get(k, [])) for k in SHOW_PROPS if props.get(k))
+        safe_name = escape_text(m["name"])
+        safe_id = escape_text(m["id"])
 
         match_cards += f"""
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-4">
           <div class="flex items-start justify-between gap-4">
             <div>
-              <h3 class="text-base font-semibold text-gray-900">{m['name']}</h3>
-              <p class="text-xs text-gray-400 mt-0.5">ID: {m['id']}</p>
+              <h3 class="text-base font-semibold text-gray-900">{safe_name}</h3>
+              <p class="text-xs text-gray-400 mt-0.5">ID: {safe_id}</p>
             </div>
             <div class="text-right shrink-0">
               <div class="text-2xl font-bold" style="color:{color}">{score_pct}%</div>
@@ -156,22 +165,27 @@ async def search_ui(request: Request, q: str = "", threshold: float = 0.7):
         {match_cards if matches else ""}"""
 
     if error:
-        result_section = f'<div class="mt-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">⚠️ {error}</div>'
+        result_section = (
+            '<div class="mt-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">'
+            f"⚠️ {escape_text(error)}</div>"
+        )
 
     json_section = ""
     if raw_json:
+        safe_raw_json = escape_text(raw_json)
         json_section = f"""
         <div class="mt-6">
           <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">JSON Output</h2>
-          <pre class="bg-gray-900 text-green-400 rounded-xl p-4 text-xs overflow-x-auto leading-relaxed">{raw_json}</pre>
+          <pre class="bg-gray-900 text-green-400 rounded-xl p-4 text-xs overflow-x-auto leading-relaxed">{safe_raw_json}</pre>
         </div>"""
 
+    safe_query = escape_text(q)
     threshold_options = "".join(
         f'<option value="{v}" {"selected" if abs(threshold - v) < 0.01 else ""}>{int(v*100)}%</option>'
         for v in [0.5, 0.6, 0.7, 0.8, 0.9]
     )
 
-    html = f"""<!DOCTYPE html>
+    page_html = f"""<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
@@ -199,7 +213,7 @@ async def search_ui(request: Request, q: str = "", threshold: float = 0.7):
       <input
         type="text"
         name="q"
-        value="{q}"
+        value="{safe_query}"
         placeholder="Name eingeben, z.B. Wladimir Putin …"
         autofocus
         class="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500"
@@ -231,7 +245,7 @@ async def search_ui(request: Request, q: str = "", threshold: float = 0.7):
 </body>
 </html>"""
 
-    return HTMLResponse(content=html)
+    return HTMLResponse(content=page_html)
 
 
 @app.post("/api/screen", response_model=ScreenResponse)
