@@ -72,14 +72,31 @@ curl -X POST http://localhost:8000/api/screen \
 
 ## Releases
 
-Beyond AI veroeffentlicht aktuell bewusst **GitHub Releases fuer Source + Docker**, noch keine installierbaren Packages.
+Beyond AI veroeffentlicht aktuell bewusst **GitHub Releases fuer Source + Docker**. Paketiert wird vorerst nur die API als GHCR-Container, noch nicht als installierbares Python-Package.
 
 - Tags im Format `vX.Y.Z-alpha.N`, `vX.Y.Z-beta.N` oder `vX.Y.Z-rc.N` werden als Pre-Releases veroeffentlicht.
 - Tags im Format `vX.Y.Z` werden als stabile Releases veroeffentlicht.
 - Jeder Push eines passenden Tags startet den Release-Workflow und erstellt automatisch den GitHub Release.
 - Der aktuelle Release-Verlauf steht in [CHANGELOG.md](CHANGELOG.md).
 
-Das erste oeffentliche Release ist als `v0.1.0-alpha.1` vorgesehen: fruehes Nutzerfeedback, reproduzierbarer Quellstand, aber noch kein Packaging fuer PyPI oder GitHub Packages.
+Das erste oeffentliche Release `v0.1.0-alpha.1` dient bewusst dem fruehen Nutzerfeedback: reproduzierbarer Quellstand, veroeffentlichter Docker-Stack und optionales GHCR-Container-Package, aber noch kein Packaging fuer PyPI.
+
+## Packages
+
+Das API-Image wird ueber GitHub Container Registry als `ghcr.io/endvater/beyond-ai-api` veroeffentlicht.
+
+- Release-Tags publizieren ein Image mit exakt demselben Tag, z. B. `v0.1.0-alpha.1`.
+- Zusaetzlich wird ein SemVer-Tag ohne fuehrendes `v` publiziert, z. B. `0.1.0-alpha.1`.
+- Nur stabile Releases ohne Suffix publizieren ausserdem `latest`.
+- Bereits existierende Release-Tags lassen sich ueber den `Package`-Workflow per `workflow_dispatch` nachziehen.
+
+```bash
+docker pull ghcr.io/endvater/beyond-ai-api:v0.1.0-alpha.1
+
+docker run --rm -p 8000:8000 \
+  -e YENTE_URL=http://host.docker.internal:8100 \
+  ghcr.io/endvater/beyond-ai-api:v0.1.0-alpha.1
+```
 
 ## Voraussetzungen
 
