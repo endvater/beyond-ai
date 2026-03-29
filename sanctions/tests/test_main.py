@@ -10,7 +10,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from sanctions.src.main import _query_yente, app
+from sanctions.src.main import APP_VERSION, _query_yente, app
 
 client = TestClient(app)
 
@@ -18,7 +18,11 @@ client = TestClient(app)
 def test_health():
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "service": "beyond-ai-api"}
+    assert response.json() == {
+        "status": "ok",
+        "service": "beyond-ai-api",
+        "version": APP_VERSION,
+    }
 
 
 def test_search_ui_empty():

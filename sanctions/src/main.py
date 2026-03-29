@@ -14,10 +14,12 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, StringConstraints
 
+APP_VERSION = os.getenv("BEYOND_AI_VERSION", "0.1.0-alpha.1")
+
 app = FastAPI(
     title="Beyond AI — Sanctions Screener",
     description="Open-source FinCrime compliance via federated AI agents.",
-    version="0.1.0",
+    version=APP_VERSION,
 )
 
 YENTE_URL = os.getenv("YENTE_URL", "http://localhost:8100")
@@ -92,7 +94,7 @@ async def _query_yente(name: str, threshold: float = 0.7) -> list[dict]:
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "beyond-ai-api"}
+    return {"status": "ok", "service": "beyond-ai-api", "version": APP_VERSION}
 
 
 @app.get("/search", response_class=HTMLResponse)
