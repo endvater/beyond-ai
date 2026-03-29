@@ -4,6 +4,15 @@ Alle nennenswerten Aenderungen an diesem Projekt werden in dieser Datei festgeha
 
 ## [Unreleased]
 
+### Added
+
+- GHCR-Publish-Workflow fuer das API-Container-Image bei Release-Tags und manuellen Tag-Backfills.
+- Build-Argument fuer `BEYOND_AI_VERSION`, damit Container und Health-Endpoint dieselbe Release-Version tragen.
+
+### Changed
+
+- GitHub-Actions-Workflows auf Node-24-faehige Major-Versionen von `actions/checkout` und `actions/setup-python` angehoben.
+
 ## [0.1.0-alpha.1] - 2026-03-29
 
 ### Added

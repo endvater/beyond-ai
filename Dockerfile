@@ -1,6 +1,10 @@
 FROM python:3.12-slim
 
+ARG BEYOND_AI_VERSION=dev
+
 WORKDIR /app
+
+ENV BEYOND_AI_VERSION=${BEYOND_AI_VERSION}
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
