@@ -14,6 +14,8 @@ on:
 permissions:
   contents: read
   packages: write
+  attestations: write
+  id-token: write
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/beyond-ai-api
@@ -68,6 +70,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
+          provenance: true
           build-args: |
             BEYOND_AI_VERSION=${{ env.IMAGE_VERSION }}
           tags: ${{ steps.meta.outputs.tags }}
