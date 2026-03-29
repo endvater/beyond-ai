@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: Validate release candidate (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -r requirements.txt pytest pytest-asyncio httpx ruff
+      - run: ruff check .
+      - run: pytest sanctions/tests/ -v
+
+  publish:
+    name: Publish GitHub release
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create GitHub release from tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          args=(
+            gh release create "${GITHUB_REF_NAME}"
+            --verify-tag
+            --title "Beyond AI ${GITHUB_REF_NAME}"
+            --generate-notes
+          )
+
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            args+=(--prerelease)
+          fi
+
+          "${args[@]}"

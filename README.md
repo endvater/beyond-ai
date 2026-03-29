@@ -70,6 +70,17 @@ curl -X POST http://localhost:8000/api/screen \
   -d '{"name": "Wladimir Putin"}'
 ```
 
+## Releases
+
+Beyond AI veroeffentlicht aktuell bewusst **GitHub Releases fuer Source + Docker**, noch keine installierbaren Packages.
+
+- Tags im Format `vX.Y.Z-alpha.N`, `vX.Y.Z-beta.N` oder `vX.Y.Z-rc.N` werden als Pre-Releases veroeffentlicht.
+- Tags im Format `vX.Y.Z` werden als stabile Releases veroeffentlicht.
+- Jeder Push eines passenden Tags startet den Release-Workflow und erstellt automatisch den GitHub Release.
+- Der aktuelle Release-Verlauf steht in [CHANGELOG.md](CHANGELOG.md).
+
+Das erste oeffentliche Release ist als `v0.1.0-alpha.1` vorgesehen: fruehes Nutzerfeedback, reproduzierbarer Quellstand, aber noch kein Packaging fuer PyPI oder GitHub Packages.
+
 ## Voraussetzungen
 
 | Komponente | Minimum | Empfohlen |
@@ -140,6 +151,13 @@ Wir freuen uns über:
 - **Datenquellen** — Weitere öffentliche Quellen identifizieren und Scraper bauen
 - **Domänenwissen** — Compliance-Officers, GwB, Regulierungsjuristen: Issues mit fachlichen Anforderungen
 - **Kritik** — Wo liegen wir falsch? Wo sind die Lücken? Issues sind willkommen.
+
+Wenn du einen Release vorbereitest, nutze einen annotierten Tag:
+
+```bash
+git tag -a v0.1.0-alpha.1 -m "Beyond AI v0.1.0-alpha.1"
+git push origin v0.1.0-alpha.1
+```
 
 ## Lizenz
 
