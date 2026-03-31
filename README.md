@@ -18,7 +18,7 @@ Dieses Repository ist der Beweis, dass die Technologie reif ist — und dass der
 
 | Modul | Status | Beschreibung | Kill Target |
 |-------|--------|-------------|-------------|
-| [`sanctions/`](sanctions) | 🔴 Sprint 1 | Sanctions & PEP Screening auf Basis von OpenSanctions + LLM Name Matching | Dow Jones R&C, World-Check, Sanction Scanner |
+| [`sanctions/`](sanctions) | 🟢 Live | Sanctions & PEP Screening auf Basis von OpenSanctions + yente — deployed auf [sanction.endvater.de](https://sanction.endvater.de) | Dow Jones R&C, World-Check, Sanction Scanner |
 | [`horizon/`](horizon) | ⚪ Geplant | Regulatory Horizon Scanner — EUR-Lex, BaFin, EBA/ESMA automatisch gescrapt und LLM-klassifiziert | VÖB RADAR, CUBE, msg LCM |
 | [`osint/`](osint) | ⚪ Geplant | Adverse Media & OSINT — RSS-Aggregation, LLM-Klassifikation, Entity Resolution | LexisNexis, Quantexa, Chainalysis |
 | [`shared/`](shared) | 🟡 Basis | Gemeinsame Infrastruktur: Neo4j-Connector, LLM-Gateway, Confidence Framework, Config | — |
@@ -26,27 +26,28 @@ Dieses Repository ist der Beweis, dass die Technologie reif ist — und dass der
 ## Architektur
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Beyond AI                            │
-│                                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │  sanctions/  │  │  horizon/   │  │       osint/        │ │
-│  │  Screening   │  │  Scanner    │  │  Adverse Media      │ │
-│  │  PEP/Lists   │  │  Norms      │  │  Entity Resolution  │ │
-│  └──────┬───────┘  └──────┬──────┘  └──────────┬──────────┘ │
-│         │                 │                     │            │
-│  ┌──────┴─────────────────┴─────────────────────┴──────────┐ │
-│  │                     shared/                              │ │
-│  │  Neo4j · LLM Gateway (Ollama/Claude) · Confidence       │ │
-│  │  Config · FastAPI Boilerplate · Auth                     │ │
-│  └──────────────────────┬───────────────────────────────────┘ │
-│                         │                                    │
-│  ┌──────────────────────┴───────────────────────────────────┐ │
-│  │               Datenquellen (öffentlich)                   │ │
-│  │  OpenSanctions · EUR-Lex · BaFin · EBA · OFAC · UN      │ │
-│  │  ICIJ · OpenCorporates · Etherscan · Wikidata            │ │
-│  └──────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                            Beyond AI                                │
+│                                                                     │
+│  ┌─────────────┐  ┌─────────────┐  ┌──────────────────────────┐    │
+│  │  sanctions/  │  │  horizon/   │  │         osint/           │    │
+│  │  Screening   │  │  Scanner    │  │  Adverse Media           │    │
+│  │  PEP/Lists   │  │  Norms      │  │  Entity Resolution       │    │
+│  └──────┬───────┘  └──────┬──────┘  └───────────┬──────────────┘    │
+│         │                 │                      │                   │
+│  ┌──────┴─────────────────┴──────────────────────┴────────────────┐  │
+│  │                          shared/                               │  │
+│  │  Neo4j · LiteLLM Gateway (Ollama/Claude) · Confidence         │  │
+│  │  Config · FastAPI Boilerplate · Prefect Scheduler             │  │
+│  └───────────────────────────┬────────────────────────────────────┘  │
+│                              │                                       │
+│  ┌───────────────────────────┴────────────────────────────────────┐  │
+│  │               Datenquellen & Matching-Layer                    │  │
+│  │  OpenSanctions · yente · nomenklatura · FollowTheMoney (FtM)  │  │
+│  │  ICIJ Offshore Leaks · EUR-Lex · BaFin · EBA · OFAC · UN     │  │
+│  │  Splink (Entity Resolution) · Aleph (OCCRP) · watchman        │  │
+│  └────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
          │
          ▼
   FinRegAgents (upstream)
@@ -61,7 +62,7 @@ Dieses Repository ist der Beweis, dass die Technologie reif ist — und dass der
 git clone https://github.com/endvater/beyond-ai.git
 cd beyond-ai
 
-# Full Stack starten (Neo4j + yente + API)
+# Full Stack starten (Neo4j + yente + ElasticSearch + API)
 docker compose up -d
 
 # Sanctions Screener testen
@@ -69,6 +70,10 @@ curl -X POST http://localhost:8000/api/screen \
   -H "Content-Type: application/json" \
   -d '{"name": "Wladimir Putin"}'
 ```
+
+Browser-UI: [localhost:8000/search](http://localhost:8000/search)
+Swagger: [localhost:8000/docs](http://localhost:8000/docs)
+Produktivinstanz: [sanction.endvater.de](https://sanction.endvater.de)
 
 ## Releases
 
@@ -111,15 +116,72 @@ docker run --rm -p 8000:8000 \
 
 ## Tech Stack
 
-- **Daten:** OpenSanctions (FtM-Schema), EUR-Lex (SPARQL), BaFin (RSS), OFAC (CSV), UN/EU (XML)
-- **Graph:** Neo4j Community Edition — Normen, Entitäten, Sanktionen, UBO-Netzwerke
-- **KI:** Ollama (Kimi-k2.5 / Qwen) als Primary, Claude API als Fallback — via `shared/llm/`
-- **Confidence:** FinRegAgents-Pattern — Retrieval Quality Gates, Composite Scoring, Phantom Detection
-- **API:** FastAPI (Python) — REST + optional GraphQL
-- **Screening:** yente (OpenSanctions self-hosted API) als ElasticSearch-basiertes Matching
-- **Frontend:** React (minimal MVP) oder Streamlit (Prototyp)
-- **Alerting:** Telegram Bot, E-Mail
-- **Deployment:** Docker Compose, Traefik-kompatibel
+### Daten & Feeds
+- **[OpenSanctions](https://www.opensanctions.org/) + yente**: Sanctions- und PEP-Daten aus 320+ Quellen — Produktivinstanz, MIT
+- **[FollowTheMoney (FtM)](https://followthemoney.tech/)**: Entity-Schema-Standard (Person, Company, Sanction) — OCCRP-maintained
+- **[nomenklatura](https://github.com/opensanctions/nomenklatura)**: Deduplizierung und statement-basiertes Datenmanagement
+- **[ICIJ Offshore Leaks](https://offshoreleaks.icij.org/)**: 1,6 Mio. Einträge aus Panama/Paradise/Pandora Papers
+
+### Matching & Entity Resolution
+- **[Splink](https://moj-analytical-services.github.io/splink/)**: Record Linkage via Fellegi-Sunter — UK Ministry of Justice, produktionsreif
+- **[moov-io/watchman](https://github.com/moov-io/watchman)**: Multi-List-Screener für OFAC/EU/UN in Go
+
+### Rules & Decisioning
+- **[gorules/zen](https://gorules.io/)**: Embeddable Rules Engine — Rust-Core, Python-Bindings
+- **[Jube](https://jube.io/) / [Marble](https://www.checkmarble.com/)**: Real-Time Transaction Monitoring, API-first, AGPL
+
+### Graph & Visualisierung
+- **[Neo4j 5.16 + GDS](https://neo4j.com/product/graph-data-science/)**: Community Detection, Centrality, UBO-Netzwerke
+- **[NetworkX](https://networkx.org/)**: Python-Graph-Tooling für Analysen
+- **[GAMLNet](https://github.com/safe-graph/graph-fraud-detection-papers)**: Graph Neural Networks für Muster-Erkennung
+- **[Cytoscape.js](https://cytoscape.org/)**: Browser-basierte Netzwerkvisualisierung
+
+### RAG & Dokumentenverarbeitung
+- **[Aleph (OCCRP)](https://github.com/aleph-re/aleph)**: Dokumentenindexierung mit Entity-Extraktion nach FtM-Schema
+- **[RAGFlow](https://github.com/infiniflow/ragflow)**: Retrieval-Augmented Generation mit Deep-Document-Understanding
+
+### Orchestrierung & LLM-Gateway
+- **[LiteLLM](https://github.com/BerriAI/litellm)**: Unified LLM Gateway — Routing, Cost-Tracking, Logging (ersetzt n8n)
+- **[Prefect](https://www.prefect.io/)**: Python-native Workflow-Scheduler für Feed-Ingestion und Polling
+- **Ollama (Kimi-k2.5 / Qwen)** als Primary LLM, **Claude API** als Fallback
+
+## Roadmap
+
+Basierend auf dem [FinCrime OS 2026-Artikel](https://watchdog.endvater.de/2026/03/fincrime-os-2026-open-source-tools-fuer-ein-foederatives-compliance-system/):
+
+**Phase 1 — Apr–Jun 2026: Fundament**
+- [ ] FtM-Kanonisierung aller Datenquellen
+- [ ] LiteLLM Gateway (ersetzt direktes Ollama-Routing)
+- [ ] Entity Resolution via Splink
+- [ ] Evaluierung Jube/Marble für Transaction Monitoring
+
+**Phase 2 — Jul–Sep 2026: Graph & Intelligence**
+- [ ] Graph Neural Networks (GAMLNet)
+- [ ] Cytoscape.js Netzwerkvisualisierung
+- [ ] DeFi/MiCA-Abdeckung via OpenAML (FINOS)
+- [ ] Rules Engine (gorules/zen) Integration
+
+**Phase 3 — Okt–Dez 2026: Föderativer Betrieb**
+- [ ] Cross-institutionelles Pattern Sharing
+- [ ] Governance Framework
+- [ ] Pilotierung mit regulatorischer Einbindung
+
+## Open-Source-Tool-Landkarte
+
+22 evaluierte Projekte in 8 funktionalen Klassen — Details: **[FinCrime OS 2026](https://watchdog.endvater.de/2026/03/fincrime-os-2026-open-source-tools-fuer-ein-foederatives-compliance-system/)**
+
+| Klasse | Tools |
+|--------|-------|
+| Datenquellen & Feeds | OpenSanctions/yente, nomenklatura, ICIJ, AMLGentex |
+| Datenmodell | FollowTheMoney (FtM), AMLTRIX |
+| Matching & Entity Resolution | Splink, moov-io/watchman |
+| Rules & Decisioning | gorules/zen, Ununseptium |
+| Transaction Monitoring | Jube, Marble, Tazama |
+| Graph & Visualisierung | Neo4j+GDS, NetworkX, GAMLNet, Cytoscape.js |
+| RAG & Dokumente | Aleph, RAGFlow, OpenAML (FINOS) |
+| Orchestrierung | LiteLLM, Prefect |
+
+Banktauglichkeits-Matrix (Lizenz · Self-hosting · RBAC · Audit-Logging · Reife) im Artikel.
 
 ## Das föderative Modell
 
@@ -136,17 +198,23 @@ DSGV, BVR oder ein vergleichbarer Verband institutionalisiert das System. Die Ba
 
 Wir suchen Institute — Sparkassen, Volksbanken, Landesbanken — die den genossenschaftlichen Gedanken in Code übersetzen wollen.
 
+> *Was noch fehlt, ist kein Tool. Es ist der erste Telefonanruf.*
+> — FinCrime OS 2026
+
 ## Artikelserie
 
-Dieses Repo begleitet die Artikelserie **„Beyond AI — Das föderative Manifest in sieben Akten"** auf [FinCrime Watchdog](https://watchdog.endvater.de):
+Dieses Repo begleitet die Artikelserie **„Beyond AI — Das föderative Manifest"** auf [FinCrime Watchdog](https://watchdog.endvater.de):
 
-1. **Das Manifest** — Die Disruptions-Landkarte *(veröffentlicht)*
-2. **Sanctions Screener** — OpenSanctions + LLM Name Matching *(in Arbeit)*
-3. **Horizon Scanner** — EUR-Lex + BaFin + LLM-Klassifikation *(geplant)*
-4. **Entity Resolution** — Splink + Neo4j + OpenCorporates *(geplant)*
-5. **Adverse Media** — RSS + LLM-Klassifikation *(geplant)*
-6. **KI-Compliance-Copilot** — FinRegAgents als Tagesassistent *(geplant)*
-7. **Das föderative Modell** — Governance, Finanzierung, Betrieb *(geplant)*
+| # | Titel | Status |
+|---|-------|--------|
+| 1 | [Das Manifest — Die Disruptions-Landkarte](https://watchdog.endvater.de/2026/03/beyond-ai-weil-technologie-kopierbar-ist-netzwerke-nicht/) | ✅ veröffentlicht |
+| — | [FinCrime OS 2026 — 22 Open-Source-Tools für föderative Compliance](https://watchdog.endvater.de/2026/03/fincrime-os-2026-open-source-tools-fuer-ein-foederatives-compliance-system/) | ✅ veröffentlicht |
+| 2 | Sanctions Screener — OpenSanctions + LLM Name Matching | ✅ veröffentlicht |
+| 3 | Horizon Scanner — EUR-Lex + BaFin + LLM-Klassifikation | 🔜 geplant |
+| 4 | Entity Resolution — Splink + Neo4j + OpenCorporates | 🔜 geplant |
+| 5 | Adverse Media — RSS + LLM-Klassifikation | 🔜 geplant |
+| 6 | KI-Compliance-Copilot — FinRegAgents als Tagesassistent | 🔜 geplant |
+| 7 | Das föderative Modell — Governance, Finanzierung, Betrieb | 🔜 geplant |
 
 ## Upstream
 
@@ -189,6 +257,7 @@ Die Daten von OpenSanctions unterliegen deren eigener [Lizenz](https://www.opens
 ## Kontakt
 
 - **FinCrime Watchdog:** [watchdog.endvater.de](https://watchdog.endvater.de)
+- **Produktivinstanz:** [sanction.endvater.de](https://sanction.endvater.de)
 - **GitHub Issues:** Bevorzugter Kanal für alles Technische
 - **Videokonferenz:** *Beyond AI — Föderatives Compliance-Engineering*, Q2 2026 (Termin wird hier bekanntgegeben)
 
