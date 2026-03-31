@@ -120,7 +120,7 @@ docker run --rm -p 8000:8000 \
 - **[OpenSanctions](https://www.opensanctions.org/) + yente**: Sanctions- und PEP-Daten aus 320+ Quellen — Produktivinstanz, MIT
 - **[FollowTheMoney (FtM)](https://followthemoney.tech/)**: Entity-Schema-Standard (Person, Company, Sanction) — OCCRP-maintained
 - **[nomenklatura](https://github.com/opensanctions/nomenklatura)**: Deduplizierung und statement-basiertes Datenmanagement
-- **[ICIJ Offshore Leaks](https://offshoreleaks.icij.org/)**: 1,6 Mio. Einträge aus Panama/Paradise/Pandora Papers
+- **[ICIJ Offshore Leaks](https://offshoreleaks.icij.org/)**: 1,6 Mio. Einträge aus Panama/Paradise/Pandora Papers — öffentliche API
 
 ### Matching & Entity Resolution
 - **[Splink](https://moj-analytical-services.github.io/splink/)**: Record Linkage via Fellegi-Sunter — UK Ministry of Justice, produktionsreif
@@ -133,7 +133,7 @@ docker run --rm -p 8000:8000 \
 ### Graph & Visualisierung
 - **[Neo4j 5.16 + GDS](https://neo4j.com/product/graph-data-science/)**: Community Detection, Centrality, UBO-Netzwerke
 - **[NetworkX](https://networkx.org/)**: Python-Graph-Tooling für Analysen
-- **[GAMLNet](https://github.com/safe-graph/graph-fraud-detection-papers)**: Graph Neural Networks für Muster-Erkennung
+- **GAMLNet**: Graph Neural Networks für Muster-Erkennung (Evaluierung Q3 2026)
 - **[Cytoscape.js](https://cytoscape.org/)**: Browser-basierte Netzwerkvisualisierung
 
 ### RAG & Dokumentenverarbeitung
@@ -172,12 +172,12 @@ Basierend auf dem [FinCrime OS 2026-Artikel](https://watchdog.endvater.de/2026/0
 
 | Klasse | Tools |
 |--------|-------|
-| Datenquellen & Feeds | OpenSanctions/yente, nomenklatura, ICIJ, AMLGentex |
+| Datenquellen & Feeds | OpenSanctions/yente, nomenklatura, ICIJ Offshore Leaks |
 | Datenmodell | FollowTheMoney (FtM), AMLTRIX |
 | Matching & Entity Resolution | Splink, moov-io/watchman |
 | Rules & Decisioning | gorules/zen, Ununseptium |
 | Transaction Monitoring | Jube, Marble, Tazama |
-| Graph & Visualisierung | Neo4j+GDS, NetworkX, GAMLNet, Cytoscape.js |
+| Graph & Visualisierung | Neo4j+GDS, NetworkX, GAMLNet (eval), Cytoscape.js |
 | RAG & Dokumente | Aleph, RAGFlow, OpenAML (FINOS) |
 | Orchestrierung | LiteLLM, Prefect |
 
