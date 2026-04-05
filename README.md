@@ -21,39 +21,102 @@ Dieses Repository ist der Beweis, dass die Technologie reif ist — und dass der
 | [`sanctions/`](sanctions) | 🟢 Live | Sanctions & PEP Screening auf Basis von OpenSanctions + yente — deployed auf [sanction.endvater.de](https://sanction.endvater.de) | Dow Jones R&C, World-Check, Sanction Scanner |
 | [`horizon/`](horizon) | ⚪ Geplant | Regulatory Horizon Scanner — EUR-Lex, BaFin, EBA/ESMA automatisch gescrapt und LLM-klassifiziert | VÖB RADAR, CUBE, msg LCM |
 | [`osint/`](osint) | ⚪ Geplant | Adverse Media & OSINT — RSS-Aggregation, LLM-Klassifikation, Entity Resolution | LexisNexis, Quantexa, Chainalysis |
-| [`shared/`](shared) | 🟡 Basis | Gemeinsame Infrastruktur: Neo4j-Connector, LLM-Gateway, Confidence Framework, Config | — |
+| [`observability/`](observability) | 🟡 Blueprint | Qualitaets-Layer fuer Detection Integrity, Data Trust, Service Health und Business Impact | isolierte Monitoring-Kacheln, fachlich blinde DQ-Programme |
+| [`federation/`](federation) | 🟡 Blueprint | Foederatives Schichtenmodell: oeffentlicher, foederativer und bankinterner Layer | Single-Bank-Silos, Vendor-Blackboxes |
+| [`shared/`](shared) | 🟡 Basis | Gemeinsame Infrastruktur: Neo4j-Connector, LLM-Gateway, Confidence, Observability- und Federation-Modelle | — |
 
 ## Architektur
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                            Beyond AI                                │
-│                                                                     │
-│  ┌─────────────┐  ┌─────────────┐  ┌──────────────────────────┐    │
-│  │  sanctions/  │  │  horizon/   │  │         osint/           │    │
-│  │  Screening   │  │  Scanner    │  │  Adverse Media           │    │
-│  │  PEP/Lists   │  │  Norms      │  │  Entity Resolution       │    │
-│  └──────┬───────┘  └──────┬──────┘  └───────────┬──────────────┘    │
-│         │                 │                      │                   │
-│  ┌──────┴─────────────────┴──────────────────────┴────────────────┐  │
-│  │                          shared/                               │  │
-│  │  Neo4j · LiteLLM Gateway (Ollama/Claude) · Confidence         │  │
-│  │  Config · FastAPI Boilerplate · Prefect Scheduler             │  │
-│  └───────────────────────────┬────────────────────────────────────┘  │
-│                              │                                       │
-│  ┌───────────────────────────┴────────────────────────────────────┐  │
-│  │               Datenquellen & Matching-Layer                    │  │
-│  │  OpenSanctions · yente · nomenklatura · FollowTheMoney (FtM)  │  │
-│  │  ICIJ Offshore Leaks · EUR-Lex · BaFin · EBA · OFAC · UN     │  │
-│  │  Splink (Entity Resolution) · Aleph (OCCRP) · watchman        │  │
-│  └────────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
-         │
-         ▼
-  FinRegAgents (upstream)
-  github.com/endvater/finreg-agents
-  Confidence-aware Validation Framework
+┌───────────────────────────────────────────────────────────────────────┐
+│                              Beyond AI                               │
+│                                                                       │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐           │
+│  │ sanctions/  │  │ horizon/    │  │       osint/        │           │
+│  │ Screening   │  │ Scanner     │  │ Adverse Media       │           │
+│  │ PEP/Lists   │  │ Norms       │  │ Entity Resolution   │           │
+│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘           │
+│         │                │                    │                      │
+│  ┌──────┴────────────────┴────────────────────┴────────────────────┐ │
+│  │ observability/                                                  │ │
+│  │ Detection Integrity · Data Trust · Service Health · Impact Map  │ │
+│  └──────┬───────────────────────────────────────────────────────────┘ │
+│         │                                                           │
+│  ┌──────┴───────────────────────────────────────────────────────────┐ │
+│  │ federation/                                                     │ │
+│  │ Public Layer · Federated Layer · Internal Layer                 │ │
+│  │ Confidence-aware Sidecars · Privacy-preserving Signals          │ │
+│  └──────┬───────────────────────────────────────────────────────────┘ │
+│         │                                                           │
+│  ┌──────┴───────────────────────────────────────────────────────────┐ │
+│  │ shared/                                                         │ │
+│  │ Neo4j · LLM Gateway · Confidence · Observability Models         │ │
+│  │ Federation Models · Config · FastAPI Boilerplate                │ │
+│  └──────┬───────────────────────────────────────────────────────────┘ │
+│         │                                                           │
+│  ┌──────┴───────────────────────────────────────────────────────────┐ │
+│  │ Datenquellen und Signale                                        │ │
+│  │ Public Data · Federated Signals · Internal Telemetry            │ │
+│  │ OpenSanctions · EUR-Lex · BaFin · EBA · ICIJ · OpenCorporates   │ │
+│  └──────────────────────────────────────────────────────────────────┘ │
+└───────────────────────────────────────────────────────────────────────┘
+          │
+          ▼
+   FinRegAgents (upstream)
+   github.com/endvater/finreg-agents
+   Confidence-aware Validation Framework
 ```
+
+## Neue Architekturprinzipien
+
+### 1. Observability als Qualitaets-Layer
+
+Beyond AI erweitert die klassische Produktarchitektur um einen expliziten
+Qualitaets-Layer ueber alle FinCrime-Module hinweg:
+
+- `Business-Qualitaet`: erkennt das System noch das Richtige?
+- `Daten-Qualitaet`: kann das Institut der Entscheidungsbasis trauen?
+- `IT-Service-Qualitaet`: laeuft die Erkennungskette noch technisch integer?
+
+Die entscheidende Regel lautet: Nicht jedes Data- oder IT-Signal gehoert ins
+Compliance-Cockpit. Sichtbar werden nur Signale mit nachweisbarer
+`Business Impact`-Wirkung auf Regeln, Modelle, Populationen, Faelle oder
+Kontrollhandlungen.
+
+### 2. Foederatives Schichtenmodell
+
+Die Beyond-AI-Architektur folgt einem dreistufigen Sichtbarkeitsmodell:
+
+- `Public Layer`: alles, was aus Regulatorik, oeffentlichen Typologien und
+  offenen Datenquellen ohnehin sichtbar ist
+- `Federated Layer`: institutionsuebergreifende Signale, Regeln und Muster ohne
+  pauschalen Rohdatenaustausch
+- `Internal Layer`: bankspezifische Modelle, Graphen, Entscheidungs- und
+  Priorisierungslogik
+
+Technologie ist kopierbar. Netzwerke, Governance und geteilte
+Qualitaetssicherung sind es nicht.
+
+### 3. Legacy-Modernisierung nach dem Strangler-Prinzip
+
+Beyond AI geht davon aus, dass reale AML-Landschaften nicht cloud-nativ
+beginnen. Deshalb ist `Mirror First` Teil der Architektur:
+
+- Event Mirrors und Shadow Pipelines vor produktiver Kernablaesung
+- Surrogat-IDs mit `Confidence Levels`, wenn keine echte End-to-End-Trace-ID
+  existiert
+- Strangeln von Faehigkeiten statt romantischer Komplett-Ablage von Systemen
+- Vendor-Lock-in bedeutet oft: zuerst Umgebung stranglen, nicht den Kern
+
+## Architekturtexte
+
+Die Repo-Architektur wird nicht nur im Code, sondern auch in den Watchdog-
+Texten entfaltet:
+
+- [Beyond AI/FinCrime OS — Weil Technologie kopierbar ist. Netzwerke nicht.](https://watchdog.endvater.de/2026/03/beyond-ai-weil-technologie-kopierbar-ist-netzwerke-nicht/)
+- [Beyond AI/FinCrime OS: Die drei Schichten der Unsichtbarkeit](https://watchdog.endvater.de/2026/03/beyond-ai-fincrime-os-die-drei-schichten-der-unsichtbarkeit/)
+- Observability-Serie Teil II: Business-, Daten- und IT-Service-Qualitaet als gemeinsamer Qualitaets-Layer
+- Observability-Serie Teil III: Strangler-Fig-Modernisierung fuer die Legacy-Bank
 
 ## Quickstart
 
@@ -197,6 +260,11 @@ Eine Gruppe von Instituten betreibt gemeinsam eine Instanz — mit geteilter Dat
 DSGV, BVR oder ein vergleichbarer Verband institutionalisiert das System. Die BaFin wird eingebunden. Das System erhält formale Governance mit Revisionsfähigkeit.
 
 Wir suchen Institute — Sparkassen, Volksbanken, Landesbanken — die den genossenschaftlichen Gedanken in Code übersetzen wollen.
+
+Das technische Modell dazu ist jetzt explizit in [`federation/`](federation)
+dokumentiert: nicht nur als Betriebsform, sondern als mehrschichtige
+Detection-Architektur aus sichtbaren, foederierten und vollstaendig internen
+Erkennungsebenen.
 
 > *Was noch fehlt, ist kein Tool. Es ist der erste Telefonanruf.*
 > — FinCrime OS 2026
