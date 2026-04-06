@@ -106,3 +106,38 @@ def test_auto_case_feedback_creates_synthetic_case_event():
     case_event = trace.latest(TraceEventType.CASE_DISPOSITIONED)
     assert case_event is not None
     assert case_event.decision_artifacts["feedback_label"] == "true_positive"
+
+
+def test_missing_jurisdiction_can_explain_false_negative_path():
+    collector = InMemoryTraceCollector()
+    complete_trace = run_transaction(
+        TransactionRecord(
+            transaction_id="tx-complete",
+            customer_id="cust-100",
+            amount_eur=48000,
+            customer_avg_monthly_eur=12000,
+            beneficiary_jurisdiction="IRN",
+            beneficiary_lei="529900T8BM49AURSDO55",
+        ),
+        collector,
+    )
+    missing_trace = run_transaction(
+        TransactionRecord(
+            transaction_id="tx-missing-jurisdiction",
+            customer_id="cust-100",
+            amount_eur=48000,
+            customer_avg_monthly_eur=12000,
+            beneficiary_jurisdiction=None,
+            beneficiary_lei="529900T8BM49AURSDO55",
+        ),
+        collector,
+    )
+
+    complete_features = complete_trace.latest(TraceEventType.FEATURES_DERIVED)
+    missing_features = missing_trace.latest(TraceEventType.FEATURES_DERIVED)
+
+    assert complete_trace.has_alert() is True
+    assert missing_trace.has_alert() is False
+    assert complete_features.derived_features["beneficiary_jurisdiction_risk"] == "high"
+    assert missing_features.derived_features["beneficiary_jurisdiction_risk"] == "unknown"
+    assert "beneficiary_jurisdiction" in missing_features.derived_features["missing_attributes"]

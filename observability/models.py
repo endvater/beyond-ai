@@ -16,7 +16,7 @@ class TransactionRecord:
     customer_id: str
     amount_eur: float
     customer_avg_monthly_eur: float
-    beneficiary_jurisdiction: str
+    beneficiary_jurisdiction: str | None
     beneficiary_lei: str | None = None
     pep_flag: bool = False
 
@@ -28,7 +28,11 @@ class TransactionRecord:
             customer_id=str(payload["customer_id"]),
             amount_eur=float(payload["amount_eur"]),
             customer_avg_monthly_eur=float(payload["customer_avg_monthly_eur"]),
-            beneficiary_jurisdiction=str(payload["beneficiary_jurisdiction"]),
+            beneficiary_jurisdiction=(
+                str(payload["beneficiary_jurisdiction"])
+                if payload.get("beneficiary_jurisdiction") is not None
+                else None
+            ),
             beneficiary_lei=payload.get("beneficiary_lei"),
             pep_flag=bool(payload.get("pep_flag", False)),
         )
@@ -55,6 +59,7 @@ class FeatureDerivation:
     cross_border: bool
     data_quality_score: float
     missing_fields: int
+    missing_attributes: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
         """Return a JSON-friendly feature map."""
@@ -64,6 +69,7 @@ class FeatureDerivation:
             "cross_border": self.cross_border,
             "data_quality_score": self.data_quality_score,
             "missing_fields": self.missing_fields,
+            "missing_attributes": list(self.missing_attributes),
         }
 
 
