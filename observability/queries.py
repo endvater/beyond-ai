@@ -24,8 +24,16 @@ def explain_why_flagged(trace: AMLTrace) -> TraceExplanation:
         raise ValueError(f"trace {trace.trace_id} does not contain an alert")
 
     detection_events = trace.for_layer(TraceLayer.DETECTION)
-    rule_event = next(event for event in detection_events if event.event_type == TraceEventType.RULE_EVALUATED)
-    model_event = next(event for event in detection_events if event.event_type == TraceEventType.MODEL_SCORED)
+    rule_event = next(
+        (e for e in detection_events if e.event_type == TraceEventType.RULE_EVALUATED), None
+    )
+    model_event = next(
+        (e for e in detection_events if e.event_type == TraceEventType.MODEL_SCORED), None
+    )
+    if rule_event is None:
+        raise ValueError(f"trace {trace.trace_id} has no RULE_EVALUATED event")
+    if model_event is None:
+        raise ValueError(f"trace {trace.trace_id} has no MODEL_SCORED event")
     feature_event = trace.latest(TraceEventType.FEATURES_DERIVED)
 
     triggered_rules = rule_event.decision_artifacts.get("triggered_rules", [])
@@ -91,10 +99,23 @@ def explain_what_changed(previous: AMLTrace, current: AMLTrace) -> TraceExplanat
 
     previous_model_score = prev_model.decision_artifacts.get("model_score") if prev_model else None
     current_model_score = curr_model.decision_artifacts.get("model_score") if curr_model else None
-    answer = (
-        "The processing outcome changed because derived features or model scores moved "
-        "between the two runs."
-    )
+
+    alert_changed = previous.has_alert() != current.has_alert()
+    score_changed = previous_model_score != current_model_score
+    changed_parts: list[str] = []
+    if feature_changes:
+        changed_parts.append(f"features {sorted(feature_changes)}")
+    if score_changed:
+        changed_parts.append(f"model score ({previous_model_score} → {current_model_score})")
+    if alert_changed:
+        changed_parts.append(
+            f"alert state ({'raised' if current.has_alert() else 'cleared'})"
+        )
+    if changed_parts:
+        answer = f"The processing outcome changed: {', '.join(changed_parts)}."
+    else:
+        answer = "No material differences detected between the two processing runs."
+
     evidence = (
         f"Feature changes: {feature_changes}",
         f"Model score delta: {(previous_model_score, current_model_score)}",

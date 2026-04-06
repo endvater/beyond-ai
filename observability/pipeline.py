@@ -9,6 +9,9 @@ from shared.observability.trace import AMLTrace, AMLTraceEvent, TraceEventType, 
 
 from .collector import InMemoryTraceCollector
 
+# Illustrative set for PoC purposes only — not a regulatory reference.
+# Derived from FATF black/grey list snapshots; verify against the current FATF
+# Public Statement before use in any production or compliance context.
 HIGH_RISK_JURISDICTIONS = {"IRN", "PRK", "RUS", "SYR", "UAE"}
 
 
@@ -42,6 +45,9 @@ def run_transaction(
     """Process one synthetic transaction through the five-layer lifecycle."""
     trace_id = f"tx-{transaction.transaction_id}"
     event_counter = 0
+    # Span chain is intentionally linear (each event's parent is the previous span).
+    # A production implementation would use per-layer parent references to reflect
+    # actual fan-out (e.g. multiple detection events sharing one transformation parent).
     last_span_id: str | None = None
 
     def emit(
@@ -94,7 +100,11 @@ def run_transaction(
         + (0.08 if transaction.pep_flag else 0.0),
     )
     combined_score = round((0.65 if rule_triggered else 0.0) + (0.35 * model_score), 2)
-    alert_created = rule_triggered or model_score >= 0.80
+    # combined_score drives the alert decision.
+    # Threshold of 0.28 = 0.35 * 0.80 (model-only path at the model alert boundary),
+    # which is also crossed whenever rule_triggered is True (combined >= 0.748 minimum).
+    COMBINED_ALERT_THRESHOLD = 0.28
+    alert_created = combined_score >= COMBINED_ALERT_THRESHOLD
 
     emit(
         layer=TraceLayer.DATA_SOURCES,
@@ -149,7 +159,7 @@ def run_transaction(
         decision_artifacts={
             "model_score": round(model_score, 2),
             "combined_score": combined_score,
-            "alert_threshold": 0.80,
+            "alert_threshold": COMBINED_ALERT_THRESHOLD,
         },
         confidence=ConfidenceLevel.from_score(model_score),
     )
@@ -173,7 +183,7 @@ def run_transaction(
             decision_artifacts={
                 "rule_triggered": rule_triggered,
                 "model_score": round(model_score, 2),
-                "alert_threshold": 0.80,
+                "alert_threshold": COMBINED_ALERT_THRESHOLD,
             },
         )
 
