@@ -1,0 +1,2 @@
+{"analyst_queue": "aml-tier-1", "feedback_label": "true_positive", "investigation_time_hours": 2.4, "status": "escalated_to_mlro", "str_filed": true, "transaction_id": "tx-001"}
+{"analyst_queue": "aml-tier-2", "feedback_label": "false_positive", "investigation_time_hours": 1.1, "status": "closed", "str_filed": false, "transaction_id": "tx-003"}

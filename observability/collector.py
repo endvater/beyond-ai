@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from shared.observability.trace import AMLTrace, AMLTraceEvent
+from .trace import AMLTrace, AMLTraceEvent
 
 
 @dataclass
