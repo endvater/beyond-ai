@@ -2,32 +2,86 @@
 
 **Weil Technologie kopierbar ist. Netzwerke nicht.**
 
-Das föderative Manifest für FinCrime-Compliance.
+Beyond AI ist ein Open-Source-Blueprint für ein föderatives FinCrime-System.
+Das Repository verbindet einen nutzbaren Sanctions-Screener mit
+Architekturbausteinen für `Observability`, `Federation` und spätere Module wie
+`Horizon Scanning` und `OSINT`.
 
----
+Die Kernthese ist einfach:
 
-## Die These
+- KI in Compliance wird Normalität, kein dauerhafter Wettbewerbsvorteil.
+- Der eigentliche Unterschied entsteht durch gemeinsame Infrastruktur,
+  nachvollziehbare Qualität und bessere Governance.
+- Deshalb denkt Beyond AI FinCrime-Systeme nicht nur als Produkt, sondern als
+  föderatives Betriebs- und Architekturmodell.
 
-Der Einsatz von KI-Agentensystemen in der Compliance wird kein Wettbewerbsvorteil sein. Er wird, innerhalb weniger Jahre, eine Selbstverständlichkeit sein — so wie heute niemand mehr damit wirbt, eine relationale Datenbank zu verwenden.
+## Was in diesem Repo heute steckt
 
-Was tatsächlich marktdifferenzierend sein wird, ist das **föderative Mindset**: die Fähigkeit und Bereitschaft von Instituten, Compliance-Infrastruktur als Gemeinschaftsgut zu begreifen und kooperativ zu entwickeln.
+- Ein laufender Sanctions- und PEP-Screener auf Basis von `OpenSanctions`,
+  `yente`, `Neo4j` und FastAPI.
+- Ein gemeinsamer `shared/`-Layer für Confidence-, Federation- und
+  Observability-Modelle.
+- Ein sauberer AML-Observability-PoC mit Trace-Objekten, Fünf-Layer-Pipeline,
+  Compliance-Queries, JSONL-Fixtures, Demo-Skripten und Walkthrough-Notebook.
+- Architekturmodule für föderativen Betrieb und observability-first
+  Compliance-Systeme.
 
-Dieses Repository ist der Beweis, dass die Technologie reif ist — und dass der nächste Schritt organisatorisch, nicht technisch ist.
+## Projektstatus
 
-## Module
+| Modul | Status | Heute nutzbar | Zweck |
+|---|---|---|---|
+| [`sanctions/`](sanctions) | `Live Alpha` | API, Web-UI, Docker-Stack | Sanctions- und PEP-Screening |
+| [`observability/`](observability) | `PoC + Blueprint` | Trace-Modelle, Demo-Skripte, Fixtures, Notebook | Detection Integrity, Data Trust, Service Health |
+| [`federation/`](federation) | `Blueprint` | Shared Federation Models | Public, Federated und Internal Layer |
+| [`shared/`](shared) | `Foundation` | Reusable Python primitives | Confidence, Config, Neo4j, LLM-Gateway |
+| [`horizon/`](horizon) | `Planned` | noch nicht | Regulatory Horizon Scanner |
+| [`osint/`](osint) | `Planned` | noch nicht | Adverse Media und Entity Resolution |
 
-| Modul | Status | Beschreibung | Kill Target |
-|-------|--------|-------------|-------------|
-| [`sanctions/`](sanctions) | 🟢 Live | Sanctions & PEP Screening auf Basis von OpenSanctions + yente — deployed auf [sanction.endvater.de](https://sanction.endvater.de) | Dow Jones R&C, World-Check, Sanction Scanner |
-| [`horizon/`](horizon) | ⚪ Geplant | Regulatory Horizon Scanner — EUR-Lex, BaFin, EBA/ESMA automatisch gescrapt und LLM-klassifiziert | VÖB RADAR, CUBE, msg LCM |
-| [`osint/`](osint) | ⚪ Geplant | Adverse Media & OSINT — RSS-Aggregation, LLM-Klassifikation, Entity Resolution | LexisNexis, Quantexa, Chainalysis |
-| [`observability/`](observability) | 🟡 Blueprint | Qualitaets-Layer fuer Detection Integrity, Data Trust, Service Health und Business Impact | isolierte Monitoring-Kacheln, fachlich blinde DQ-Programme |
-| [`federation/`](federation) | 🟡 Blueprint | Foederatives Schichtenmodell: oeffentlicher, foederativer und bankinterner Layer | Single-Bank-Silos, Vendor-Blackboxes |
-| [`shared/`](shared) | 🟡 Basis | Gemeinsame Infrastruktur: Neo4j-Connector, LLM-Gateway, Confidence, Observability- und Federation-Modelle | — |
+## Warum Beyond AI anders gebaut ist
 
-## Architektur
+### 1. Observability statt blindem Monitoring
 
-```
+Beyond AI behandelt Observability nicht als NOC-Thema, sondern als
+Compliance-Fähigkeit. Die entscheidende Frage ist nicht nur, ob ein System
+läuft, sondern ob sich rekonstruieren lässt, warum etwas erkannt, nicht
+erkannt, verzögert oder falsch weitergegeben wurde.
+
+Der neue Observability-PoC in [`observability/`](observability) bringt dafür
+bereits einen kleinen, aber vollständiger wirkenden technischen Kern mit:
+
+- formale `AMLTrace`- und `AMLTraceEvent`-Modelle
+- `trace_id`, `span_id` und Layer-Zuordnung
+- getrennte Module für Detection, Case Management und Privacy/Retention
+- eine synthetische Fünf-Layer-Pipeline mit Beispiel-Daten
+- Compliance-Queries wie `why_flagged`, `why_not_flagged` und `what_changed`
+- Demo-Skripte und ein Walkthrough-Notebook für Paper- und Reviewer-Demos
+
+### 2. Federation statt Single-Bank-Silo
+
+Beyond AI unterscheidet bewusst zwischen drei Sichtbarkeits- und
+Kooperationsschichten:
+
+- `Public`: alles, was regulatorisch oder aus offenen Daten ohnehin sichtbar ist
+- `Federated`: gemeinsame Muster, Heuristiken und Signale ohne pauschalen
+  Rohdatenaustausch
+- `Internal`: institutsinterne Entscheidungslogik, Priorisierung und Modelle
+
+Die These dahinter: Technologie ist kopierbar, aber gut kuratierte Netzwerke,
+Governance und gemeinsame Qualitätssicherung sind es nicht.
+
+### 3. Mirror First statt Big-Bang-Ablösung
+
+Das Repo geht nicht von Greenfield-Banken aus. Reale AML-Landschaften bestehen
+aus Legacy-Systemen, Vendor-Blackboxes und manuellen Kontrollketten. Deshalb
+setzt Beyond AI architektonisch auf:
+
+- Event Mirrors und Shadow Pipelines
+- Surrogat-IDs mit Confidence Levels
+- Strangler-Fig-Migration statt romantischer Komplett-Ablösung
+
+## Architektur auf einen Blick
+
+```text
 ┌───────────────────────────────────────────────────────────────────────┐
 │                              Beyond AI                               │
 │                                                                       │
@@ -51,7 +105,7 @@ Dieses Repository ist der Beweis, dass die Technologie reif ist — und dass der
 │  ┌──────┴───────────────────────────────────────────────────────────┐ │
 │  │ shared/                                                         │ │
 │  │ Neo4j · LLM Gateway · Confidence · Observability Models         │ │
-│  │ Federation Models · Config · FastAPI Boilerplate                │ │
+│  │ Federation Models · Config                                      │ │
 │  └──────┬───────────────────────────────────────────────────────────┘ │
 │         │                                                           │
 │  ┌──────┴───────────────────────────────────────────────────────────┐ │
@@ -60,275 +114,128 @@ Dieses Repository ist der Beweis, dass die Technologie reif ist — und dass der
 │  │ OpenSanctions · EUR-Lex · BaFin · EBA · ICIJ · OpenCorporates   │ │
 │  └──────────────────────────────────────────────────────────────────┘ │
 └───────────────────────────────────────────────────────────────────────┘
-          │
-          ▼
-   FinRegAgents (upstream)
-   github.com/endvater/finreg-agents
-   Confidence-aware Validation Framework
 ```
 
-## Neue Architekturprinzipien
+## Schnellstart
 
-### 1. Observability als Qualitaets-Layer
-
-Beyond AI erweitert die klassische Produktarchitektur um einen expliziten
-Qualitaets-Layer ueber alle FinCrime-Module hinweg:
-
-- `Business-Qualitaet`: erkennt das System noch das Richtige?
-- `Daten-Qualitaet`: kann das Institut der Entscheidungsbasis trauen?
-- `IT-Service-Qualitaet`: laeuft die Erkennungskette noch technisch integer?
-
-Die entscheidende Regel lautet: Nicht jedes Data- oder IT-Signal gehoert ins
-Compliance-Cockpit. Sichtbar werden nur Signale mit nachweisbarer
-`Business Impact`-Wirkung auf Regeln, Modelle, Populationen, Faelle oder
-Kontrollhandlungen.
-
-### 2. Foederatives Schichtenmodell
-
-Die Beyond-AI-Architektur folgt einem dreistufigen Sichtbarkeitsmodell:
-
-- `Public Layer`: alles, was aus Regulatorik, oeffentlichen Typologien und
-  offenen Datenquellen ohnehin sichtbar ist
-- `Federated Layer`: institutionsuebergreifende Signale, Regeln und Muster ohne
-  pauschalen Rohdatenaustausch
-- `Internal Layer`: bankspezifische Modelle, Graphen, Entscheidungs- und
-  Priorisierungslogik
-
-Technologie ist kopierbar. Netzwerke, Governance und geteilte
-Qualitaetssicherung sind es nicht.
-
-### 3. Legacy-Modernisierung nach dem Strangler-Prinzip
-
-Beyond AI geht davon aus, dass reale AML-Landschaften nicht cloud-nativ
-beginnen. Deshalb ist `Mirror First` Teil der Architektur:
-
-- Event Mirrors und Shadow Pipelines vor produktiver Kernablaesung
-- Surrogat-IDs mit `Confidence Levels`, wenn keine echte End-to-End-Trace-ID
-  existiert
-- Strangeln von Faehigkeiten statt romantischer Komplett-Ablage von Systemen
-- Vendor-Lock-in bedeutet oft: zuerst Umgebung stranglen, nicht den Kern
-
-## Architekturtexte
-
-Die Repo-Architektur wird nicht nur im Code, sondern auch in den Watchdog-
-Texten entfaltet:
-
-- [Beyond AI/FinCrime OS — Weil Technologie kopierbar ist. Netzwerke nicht.](https://watchdog.endvater.de/2026/03/beyond-ai-weil-technologie-kopierbar-ist-netzwerke-nicht/)
-- [Beyond AI/FinCrime OS: Die drei Schichten der Unsichtbarkeit](https://watchdog.endvater.de/2026/03/beyond-ai-fincrime-os-die-drei-schichten-der-unsichtbarkeit/)
-- Observability-Serie Teil II: Business-, Daten- und IT-Service-Qualitaet als gemeinsamer Qualitaets-Layer
-- Observability-Serie Teil III: Strangler-Fig-Modernisierung fuer die Legacy-Bank
-
-## Quickstart
+### Docker-Stack lokal starten
 
 ```bash
-# Repository klonen
 git clone https://github.com/endvater/beyond-ai.git
 cd beyond-ai
 
-# Full Stack starten (Neo4j + yente + ElasticSearch + API)
+cp .env.example .env
 docker compose up -d
+```
 
-# Sanctions Screener testen
+Danach verfügbar:
+
+- API: [http://localhost:8000](http://localhost:8000)
+- Swagger: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Web-UI: [http://localhost:8000/search](http://localhost:8000/search)
+- Neo4j Browser: [http://localhost:7474](http://localhost:7474)
+- yente API: [http://localhost:8100](http://localhost:8100)
+
+### Sanctions-Screener testen
+
+```bash
 curl -X POST http://localhost:8000/api/screen \
   -H "Content-Type: application/json" \
   -d '{"name": "Wladimir Putin"}'
 ```
 
-Browser-UI: [localhost:8000/search](http://localhost:8000/search)
-Swagger: [localhost:8000/docs](http://localhost:8000/docs)
-Produktivinstanz: [sanction.endvater.de](https://sanction.endvater.de)
+### Test-Suite ausführen
 
-## Releases
+```bash
+pytest -q
+ruff check observability shared tests
+python3 -m observability.scripts.run_demo --limit 3
+```
 
-Beyond AI veroeffentlicht aktuell bewusst **GitHub Releases fuer Source + Docker**. Paketiert wird vorerst nur die API als GHCR-Container, noch nicht als installierbares Python-Package.
+## Repository-Struktur
 
-- Tags im Format `vX.Y.Z-alpha.N`, `vX.Y.Z-beta.N` oder `vX.Y.Z-rc.N` werden als Pre-Releases veroeffentlicht.
-- Tags im Format `vX.Y.Z` werden als stabile Releases veroeffentlicht.
-- Jeder Push eines passenden Tags startet den Release-Workflow und erstellt automatisch den GitHub Release.
-- Der aktuelle Release-Verlauf steht in [CHANGELOG.md](CHANGELOG.md).
+```text
+beyond-ai/
+├── sanctions/        # laufender Screening-Stack
+├── observability/    # AML observability PoC, Demo-Daten und Architekturmodul
+├── federation/       # Föderations- und Sichtbarkeitsmodell
+├── horizon/          # geplanter Horizon Scanner
+├── osint/            # geplantes OSINT-Modul
+├── shared/           # gemeinsame Infrastruktur und Datenmodelle
+├── tests/            # Architektur- und PoC-Tests
+├── docker-compose.yml
+└── README.md
+```
 
-Das erste oeffentliche Release `v0.1.0-alpha.1` dient bewusst dem fruehen Nutzerfeedback: reproduzierbarer Quellstand, veroeffentlichter Docker-Stack und optionales GHCR-Container-Package, aber noch kein Packaging fuer PyPI.
+## Technische Basis
 
-## Packages
+### Laufender Stack
 
-Das API-Image wird ueber GitHub Container Registry als `ghcr.io/endvater/beyond-ai-api` veroeffentlicht.
+- `FastAPI` für die API
+- `Neo4j` als Graph- und Kontext-Layer
+- `yente` als selbst gehostete OpenSanctions-API
+- `ElasticSearch` für yente
+- `Docker Compose` für lokalen und frühen produktionsnahen Betrieb
 
-- Release-Tags publizieren ein Image mit exakt demselben Tag, z. B. `v0.1.0-alpha.1`.
-- Zusaetzlich wird ein SemVer-Tag ohne fuehrendes `v` publiziert, z. B. `0.1.0-alpha.1`.
-- Nur stabile Releases ohne Suffix publizieren ausserdem `latest`.
-- Bereits existierende Release-Tags lassen sich ueber den `Package`-Workflow per `workflow_dispatch` nachziehen.
+### Gemeinsame Architekturbausteine
+
+- `shared/confidence/` für Confidence Levels und gemeinsame Bewertungsskalen
+- `shared/observability/` für Quality Signals, Correlation Handles und
+  Trace-Modelle
+- `shared/federation/` für Sichtbarkeits- und Sharing-Modelle
+- `shared/neo4j/` und `shared/llm/` für Connectoren und Gateway-Logik
+
+## Releases und Container
+
+Beyond AI veröffentlicht aktuell bewusst Source-Releases plus Docker-Images.
+Der API-Container wird über GitHub Container Registry publiziert als
+`ghcr.io/endvater/beyond-ai-api`.
 
 ```bash
 docker pull ghcr.io/endvater/beyond-ai-api:v0.1.0-alpha.1
-
-docker run --rm -p 8000:8000 \
-  -e YENTE_URL=http://host.docker.internal:8100 \
-  ghcr.io/endvater/beyond-ai-api:v0.1.0-alpha.1
 ```
 
-## Voraussetzungen
+Release-Tags im Format `vX.Y.Z-alpha.N`, `vX.Y.Z-beta.N` und `vX.Y.Z-rc.N`
+werden als Pre-Releases behandelt. Reine `vX.Y.Z`-Tags gelten als stabile
+Releases.
 
-| Komponente | Minimum | Empfohlen |
-|-----------|---------|-----------|
-| Docker + Compose | v24+ | v26+ |
-| RAM | 8 GB | 16 GB |
-| Disk | 60 GB | 120 GB (SSD) |
-| Python | 3.11+ | 3.12+ |
-| Neo4j | 5.x Community | 5.16+ |
-| LLM | Ollama (lokal) | + Claude API (Fallback) |
+Mehr Kontext steht in [CHANGELOG.md](CHANGELOG.md).
 
-## Tech Stack
+## Roadmap 2026
 
-### Daten & Feeds
-- **[OpenSanctions](https://www.opensanctions.org/) + yente**: Sanctions- und PEP-Daten aus 320+ Quellen — Produktivinstanz, MIT
-- **[FollowTheMoney (FtM)](https://followthemoney.tech/)**: Entity-Schema-Standard (Person, Company, Sanction) — OCCRP-maintained
-- **[nomenklatura](https://github.com/opensanctions/nomenklatura)**: Deduplizierung und statement-basiertes Datenmanagement
-- **[ICIJ Offshore Leaks](https://offshoreleaks.icij.org/)**: 1,6 Mio. Einträge aus Panama/Paradise/Pandora Papers — öffentliche API
+### Phase 1
 
-### Matching & Entity Resolution
-- **[Splink](https://moj-analytical-services.github.io/splink/)**: Record Linkage via Fellegi-Sunter — UK Ministry of Justice, produktionsreif
-- **[moov-io/watchman](https://github.com/moov-io/watchman)**: Multi-List-Screener für OFAC/EU/UN in Go
+- FtM-Kanonisierung der Datenquellen
+- Stabilisierung des Sanctions-Screeners
+- Ausbau des Observability-Layers von PoC zu integriertem Qualitäts-Layer
+- erste federation-aware Sharing-Regeln
 
-### Rules & Decisioning
-- **[gorules/zen](https://gorules.io/)**: Embeddable Rules Engine — Rust-Core, Python-Bindings
-- **[Jube](https://jube.io/) / [Marble](https://www.checkmarble.com/)**: Real-Time Transaction Monitoring, API-first, AGPL
+### Phase 2
 
-### Graph & Visualisierung
-- **[Neo4j 5.16 + GDS](https://neo4j.com/product/graph-data-science/)**: Community Detection, Centrality, UBO-Netzwerke
-- **[NetworkX](https://networkx.org/)**: Python-Graph-Tooling für Analysen
-- **GAMLNet**: Graph Neural Networks für Muster-Erkennung (Evaluierung Q3 2026)
-- **[Cytoscape.js](https://cytoscape.org/)**: Browser-basierte Netzwerkvisualisierung
+- Entity Resolution und Graph Intelligence
+- Regeln und Decisioning für Transaction Monitoring
+- weitere Module für Regulatory Horizon Scanning und OSINT
 
-### RAG & Dokumentenverarbeitung
-- **[Aleph (OCCRP)](https://github.com/aleph-re/aleph)**: Dokumentenindexierung mit Entity-Extraktion nach FtM-Schema
-- **[RAGFlow](https://github.com/infiniflow/ragflow)**: Retrieval-Augmented Generation mit Deep-Document-Understanding
+### Phase 3
 
-### Orchestrierung & LLM-Gateway
-- **[LiteLLM](https://github.com/BerriAI/litellm)**: Unified LLM Gateway — Routing, Cost-Tracking, Logging (ersetzt n8n)
-- **[Prefect](https://www.prefect.io/)**: Python-native Workflow-Scheduler für Feed-Ingestion und Polling
-- **Ollama (Kimi-k2.5 / Qwen)** als Primary LLM, **Claude API** als Fallback
+- föderativer Betrieb über mehrere Institute
+- Governance-Playbook und geteilte Qualitätssicherung
+- regulatorisch anschlussfähiges Betriebsmodell
 
-## Roadmap
+## Weiterführende Texte
 
-Basierend auf dem [FinCrime OS 2026-Artikel](https://watchdog.endvater.de/2026/03/fincrime-os-2026-open-source-tools-fuer-ein-foederatives-compliance-system/):
-
-**Phase 1 — Apr–Jun 2026: Fundament**
-- [ ] FtM-Kanonisierung aller Datenquellen
-- [ ] LiteLLM Gateway (ersetzt direktes Ollama-Routing)
-- [ ] Entity Resolution via Splink
-- [ ] Evaluierung Jube/Marble für Transaction Monitoring
-
-**Phase 2 — Jul–Sep 2026: Graph & Intelligence**
-- [ ] Graph Neural Networks (GAMLNet)
-- [ ] Cytoscape.js Netzwerkvisualisierung
-- [ ] DeFi/MiCA-Abdeckung via OpenAML (FINOS)
-- [ ] Rules Engine (gorules/zen) Integration
-
-**Phase 3 — Okt–Dez 2026: Föderativer Betrieb**
-- [ ] Cross-institutionelles Pattern Sharing
-- [ ] Governance Framework
-- [ ] Pilotierung mit regulatorischer Einbindung
-
-## Open-Source-Tool-Landkarte
-
-22 evaluierte Projekte in 8 funktionalen Klassen — Details: **[FinCrime OS 2026](https://watchdog.endvater.de/2026/03/fincrime-os-2026-open-source-tools-fuer-ein-foederatives-compliance-system/)**
-
-| Klasse | Tools |
-|--------|-------|
-| Datenquellen & Feeds | OpenSanctions/yente, nomenklatura, ICIJ Offshore Leaks |
-| Datenmodell | FollowTheMoney (FtM), AMLTRIX |
-| Matching & Entity Resolution | Splink, moov-io/watchman |
-| Rules & Decisioning | gorules/zen, Ununseptium |
-| Transaction Monitoring | Jube, Marble, Tazama |
-| Graph & Visualisierung | Neo4j+GDS, NetworkX, GAMLNet (eval), Cytoscape.js |
-| RAG & Dokumente | Aleph, RAGFlow, OpenAML (FINOS) |
-| Orchestrierung | LiteLLM, Prefect |
-
-Banktauglichkeits-Matrix (Lizenz · Self-hosting · RBAC · Audit-Logging · Reife) im Artikel.
+- [Beyond AI/FinCrime OS — Weil Technologie kopierbar ist. Netzwerke nicht.](https://watchdog.endvater.de/2026/03/beyond-ai-weil-technologie-kopierbar-ist-netzwerke-nicht/)
+- [Beyond AI/FinCrime OS: Die drei Schichten der Unsichtbarkeit](https://watchdog.endvater.de/2026/03/beyond-ai-fincrime-os-die-drei-schichten-der-unsichtbarkeit/)
+- [FinCrime OS 2026: Open-Source-Tools für ein föderatives Compliance-System](https://watchdog.endvater.de/2026/03/fincrime-os-2026-open-source-tools-fuer-ein-foederatives-compliance-system/)
 
 ## Das föderative Modell
 
-Dieses Projekt ist nicht nur ein Tech-Repo. Es ist ein Aufruf.
+Beyond AI ist nicht nur ein Tech-Repo, sondern ein Vorschlag für ein anderes
+Betriebsmodell:
 
-**Stufe 1 — Open Source mit Community-Governance**
-Die Software ist frei verfügbar. Jedes Institut kann sie selbst betreiben. Das ist der aktuelle Stand.
-
-**Stufe 2 — Föderativer Betrieb**
-Eine Gruppe von Instituten betreibt gemeinsam eine Instanz — mit geteilter Datenpflege, gemeinschaftlicher Qualitätssicherung und umgelegten Kosten.
-
-**Stufe 3 — Verbandslösung**
-DSGV, BVR oder ein vergleichbarer Verband institutionalisiert das System. Die BaFin wird eingebunden. Das System erhält formale Governance mit Revisionsfähigkeit.
-
-Wir suchen Institute — Sparkassen, Volksbanken, Landesbanken — die den genossenschaftlichen Gedanken in Code übersetzen wollen.
-
-Das technische Modell dazu ist jetzt explizit in [`federation/`](federation)
-dokumentiert: nicht nur als Betriebsform, sondern als mehrschichtige
-Detection-Architektur aus sichtbaren, foederierten und vollstaendig internen
-Erkennungsebenen.
-
-> *Was noch fehlt, ist kein Tool. Es ist der erste Telefonanruf.*
-> — FinCrime OS 2026
-
-## Artikelserie
-
-Dieses Repo begleitet die Artikelserie **„Beyond AI — Das föderative Manifest"** auf [FinCrime Watchdog](https://watchdog.endvater.de):
-
-| # | Titel | Status |
-|---|-------|--------|
-| 1 | [Das Manifest — Die Disruptions-Landkarte](https://watchdog.endvater.de/2026/03/beyond-ai-weil-technologie-kopierbar-ist-netzwerke-nicht/) | ✅ veröffentlicht |
-| — | [FinCrime OS 2026 — 22 Open-Source-Tools für föderative Compliance](https://watchdog.endvater.de/2026/03/fincrime-os-2026-open-source-tools-fuer-ein-foederatives-compliance-system/) | ✅ veröffentlicht |
-| 2 | Sanctions Screener — OpenSanctions + LLM Name Matching | ✅ veröffentlicht |
-| 3 | Horizon Scanner — EUR-Lex + BaFin + LLM-Klassifikation | 🔜 geplant |
-| 4 | Entity Resolution — Splink + Neo4j + OpenCorporates | 🔜 geplant |
-| 5 | Adverse Media — RSS + LLM-Klassifikation | 🔜 geplant |
-| 6 | KI-Compliance-Copilot — FinRegAgents als Tagesassistent | 🔜 geplant |
-| 7 | Das föderative Modell — Governance, Finanzierung, Betrieb | 🔜 geplant |
-
-## Upstream
-
-Dieses Projekt baut auf dem [FinRegAgents](https://github.com/endvater/finreg-agents) Confidence-aware Validation Framework auf. FinRegAgents liefert die Validierungs-Pipeline für KI-generierte regulatorische Analysen — Beyond AI nutzt diese Pipeline für Sanctions Screening, Normenklassifikation und Adverse-Media-Bewertung.
-
-## Mitmachen
-
-```bash
-# Fork → Branch → PR
-git checkout -b feature/mein-beitrag
-# ... Code schreiben ...
-git push origin feature/mein-beitrag
-# Pull Request öffnen
-```
-
-Wir freuen uns über:
-
-- **Code** — Module, Bugfixes, Tests, Integrationen
-- **Datenquellen** — Weitere öffentliche Quellen identifizieren und Scraper bauen
-- **Domänenwissen** — Compliance-Officers, GwB, Regulierungsjuristen: Issues mit fachlichen Anforderungen
-- **Kritik** — Wo liegen wir falsch? Wo sind die Lücken? Issues sind willkommen.
-
-Wenn du einen Release vorbereitest, nutze einen annotierten Tag:
-
-```bash
-git tag -a v0.1.0-alpha.1 -m "Beyond AI v0.1.0-alpha.1"
-git push origin v0.1.0-alpha.1
-```
-
-## Lizenz
-
-Licensed under the **Apache License, Version 2.0** — siehe [LICENSE](LICENSE) und [NOTICE](NOTICE).
-
-Du darfst den Code frei verwenden, modifizieren und verteilen — auch kommerziell — unter den Bedingungen der Apache 2.0 Lizenz. Diese beinhaltet eine explizite Patentlizenz und einen Patent-Retaliation-Mechanismus, der das Projekt und seine Nutzer schützt.
-
-**Warum Apache 2.0?** Beyond AI zielt auf den Einsatz in regulierten Finanzinstituten. Apache 2.0 bietet die rechtliche Klarheit die Enterprise-Rechtsabteilungen erwarten: expliziter Patent-Grant, Contributor-Patentlizenz und Kompatibilität mit den Compliance-Anforderungen institutioneller Nutzer.
-
-Die Daten von OpenSanctions unterliegen deren eigener [Lizenz](https://www.opensanctions.org/licensing/) (frei für nicht-kommerzielle Nutzung, Datenlizenz für kommerzielle Nutzung erforderlich).
-
-## Kontakt
-
-- **FinCrime Watchdog:** [watchdog.endvater.de](https://watchdog.endvater.de)
-- **Produktivinstanz:** [sanction.endvater.de](https://sanction.endvater.de)
-- **GitHub Issues:** Bevorzugter Kanal für alles Technische
-- **Videokonferenz:** *Beyond AI — Föderatives Compliance-Engineering*, Q2 2026 (Termin wird hier bekanntgegeben)
-
----
-
-*Beyond AI ist ein Projekt des [FinCrime Watchdog](https://watchdog.endvater.de) — unabhängiger, KI-gestützter Datenjournalismus für Financial Crime und Regulatory Compliance im DACH-Raum.*
+1. `Open Source`
+   Jedes Institut kann den Stack selbst betreiben.
+2. `Federated Operation`
+   Mehrere Institute teilen Kuratierung, Muster und Qualitätssicherung.
+3. `Institutionalisierung`
+   Verbände oder Netzwerke geben dem System formale Governance.
