@@ -20,19 +20,27 @@ def derive_features(transaction: TransactionRecord) -> FeatureDerivation:
         if transaction.customer_avg_monthly_eur
         else 0.0
     )
-    jurisdiction_risk = (
-        "high"
-        if transaction.beneficiary_jurisdiction in ILLUSTRATIVE_HIGH_RISK_JURISDICTIONS
-        else "standard"
-    )
-    missing_fields = 0 if transaction.beneficiary_lei else 1
-    data_quality_score = 0.91 if missing_fields == 1 else 0.98
+    missing_attributes: list[str] = []
+    if transaction.beneficiary_jurisdiction is None:
+        jurisdiction_risk = "unknown"
+        missing_attributes.append("beneficiary_jurisdiction")
+    elif transaction.beneficiary_jurisdiction in ILLUSTRATIVE_HIGH_RISK_JURISDICTIONS:
+        jurisdiction_risk = "high"
+    else:
+        jurisdiction_risk = "standard"
+
+    if transaction.beneficiary_lei is None:
+        missing_attributes.append("beneficiary_lei")
+
+    missing_fields = len(missing_attributes)
+    data_quality_score = round(max(0.65, 0.98 - (0.07 * missing_fields)), 2)
     return FeatureDerivation(
         amount_multiple=amount_multiple,
         beneficiary_jurisdiction_risk=jurisdiction_risk,
-        cross_border=True,
+        cross_border=transaction.beneficiary_jurisdiction not in {None, "DEU"},
         data_quality_score=data_quality_score,
         missing_fields=missing_fields,
+        missing_attributes=tuple(missing_attributes),
     )
 
 

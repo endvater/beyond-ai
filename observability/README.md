@@ -56,6 +56,7 @@ Detection Integrity     Data Trust         Service Health
 ```text
 observability/
 ├── README.md
+├── TECHNICAL_SPEC.md
 ├── __init__.py
 ├── models.py
 ├── trace.py
@@ -335,6 +336,9 @@ Qualitaet und Impact sprechen.
 - `models.py`
   Domain-Modelle fuer Transaktionen, Feature-Derivation, Detection Decisions,
   Case Dispositions und Retention Decisions.
+- `TECHNICAL_SPEC.md`
+  Formale Beschreibung des aktuellen Trace-Modells und der Layer-Semantik fuer
+  Paper, Rebuttal und technische Diskussion.
 - `trace.py`
   Lokale Trace-Helfer plus Re-Export der shared Trace-Primitiven.
 - `detector.py`
@@ -353,10 +357,22 @@ Qualitaet und Impact sprechen.
 - `scripts/run_demo.py`
   Ein lauffaehiger Demo-Einstieg mit den eingecheckten JSONL-Fixtures.
 - `notebooks/walkthrough.ipynb`
-  Ein ausgefuelltes Schaufenster fuer Reviewer, Demos und Paper-Walkthroughs.
+  Ein ausgefuelltes Schaufenster fuer Reviewer, Demos und Paper-Walkthroughs,
+  inklusive Missing-Data-/False-Negative-Szenario.
 
 Damit ist der Layer nicht mehr nur Architekturtext, sondern ein kleiner,
 testbarer Implementierungs-Blueprint fuer AML Observability.
+
+## Formale Spezifikation
+
+Die paper-taugliche Beschreibung des Modells steht in
+[TECHNICAL_SPEC.md](./TECHNICAL_SPEC.md). Sie beschreibt:
+
+- das event-zentrierte `AMLTrace`- und `AMLTraceEvent`-Modell
+- die Zuordnung zu den fuenf AML-Layern
+- die aktuelle Entscheidungssemantik in der Detection
+- die Retention-Logik
+- das Missing-Data-/False-Negative-Walkthrough
 
 ## Schnellstart
 

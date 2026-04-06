@@ -66,6 +66,7 @@ def run_transaction(
             "customer_id": transaction.customer_id,
             "amount_eur": transaction.amount_eur,
             "beneficiary_jurisdiction": transaction.beneficiary_jurisdiction,
+            "beneficiary_lei": transaction.beneficiary_lei,
             "pep_flag": transaction.pep_flag,
         },
     )
@@ -85,7 +86,10 @@ def run_transaction(
         event_type=TraceEventType.FEATURES_DERIVED,
         summary="Risk features derived for transaction monitoring.",
         derived_features=features.as_dict(),
-        decision_artifacts={"beneficiary_lei_present": transaction.beneficiary_lei is not None},
+        decision_artifacts={
+            "beneficiary_lei_present": transaction.beneficiary_lei is not None,
+            "beneficiary_jurisdiction_present": transaction.beneficiary_jurisdiction is not None,
+        },
     )
     emit(
         layer=TraceLayer.DETECTION,
