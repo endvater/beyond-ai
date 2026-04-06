@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from shared.observability.trace import AMLTrace, TraceEventType, TraceLayer
+from shared.observability.trace import AMLTrace, TraceEventType
 
 
 @dataclass(frozen=True)
@@ -17,30 +17,39 @@ class TraceExplanation:
     evidence: tuple[str, ...]
 
 
+def _require_event(trace: AMLTrace, event_type: TraceEventType):
+    """Return a required event or raise a clear reconstruction error."""
+    event = trace.latest(event_type)
+    if event is None:
+        raise ValueError(
+            f"trace {trace.trace_id} is missing required event {event_type.value}"
+        )
+    return event
+
+
 def explain_why_flagged(trace: AMLTrace) -> TraceExplanation:
     """Explain why a transaction produced an alert."""
-    alert_event = trace.latest(TraceEventType.ALERT_CREATED)
-    if alert_event is None:
-        raise ValueError(f"trace {trace.trace_id} does not contain an alert")
-
-    detection_events = trace.for_layer(TraceLayer.DETECTION)
-    rule_event = next(event for event in detection_events if event.event_type == TraceEventType.RULE_EVALUATED)
-    model_event = next(event for event in detection_events if event.event_type == TraceEventType.MODEL_SCORED)
+    alert_event = _require_event(trace, TraceEventType.ALERT_CREATED)
+    rule_event = _require_event(trace, TraceEventType.RULE_EVALUATED)
+    model_event = _require_event(trace, TraceEventType.MODEL_SCORED)
     feature_event = trace.latest(TraceEventType.FEATURES_DERIVED)
 
     triggered_rules = rule_event.decision_artifacts.get("triggered_rules", [])
     model_score = model_event.decision_artifacts.get("model_score")
+    combined_score = model_event.decision_artifacts.get("combined_score")
     derived_features = feature_event.derived_features if feature_event else {}
 
     evidence = (
         f"Triggered rules: {triggered_rules or 'none'}",
         f"Model score: {model_score}",
+        f"Combined score: {combined_score}",
         f"Derived features: {derived_features}",
         f"Alert details: {alert_event.decision_artifacts}",
     )
     answer = (
         "The transaction was flagged because detection logic observed a risk pattern "
-        f"with rules {triggered_rules or '[]'} and model score {model_score}."
+        f"with rules {triggered_rules or '[]'}, model score {model_score}, "
+        f"and decision score {combined_score}."
     )
     return TraceExplanation(
         trace_id=trace.trace_id,
@@ -56,11 +65,11 @@ def explain_why_not_flagged(trace: AMLTrace) -> TraceExplanation:
     if no_alert_event is None:
         raise ValueError(f"trace {trace.trace_id} contains an alert; use explain_why_flagged")
 
-    model_event = trace.latest(TraceEventType.MODEL_SCORED)
+    model_event = _require_event(trace, TraceEventType.MODEL_SCORED)
     feature_event = trace.latest(TraceEventType.FEATURES_DERIVED)
     evidence = (
         f"Threshold result: {no_alert_event.decision_artifacts}",
-        f"Model score: {model_event.decision_artifacts if model_event else {}}",
+        f"Model score: {model_event.decision_artifacts}",
         f"Derived features: {feature_event.derived_features if feature_event else {}}",
     )
     answer = (
@@ -91,14 +100,32 @@ def explain_what_changed(previous: AMLTrace, current: AMLTrace) -> TraceExplanat
 
     previous_model_score = prev_model.decision_artifacts.get("model_score") if prev_model else None
     current_model_score = curr_model.decision_artifacts.get("model_score") if curr_model else None
-    answer = (
-        "The processing outcome changed because derived features or model scores moved "
-        "between the two runs."
-    )
+    previous_alert = previous.has_alert()
+    current_alert = current.has_alert()
+
+    changes: list[str] = []
+    if feature_changes:
+        feature_names = ", ".join(sorted(feature_changes))
+        changes.append(f"derived features changed ({feature_names})")
+    if previous_model_score != current_model_score:
+        changes.append(
+            f"model score moved from {previous_model_score} to {current_model_score}"
+        )
+    if previous_alert != current_alert:
+        changes.append(
+            f"alert state changed from {'alerted' if previous_alert else 'no alert'} "
+            f"to {'alerted' if current_alert else 'no alert'}"
+        )
+
+    if changes:
+        answer = "The processing outcome changed because " + "; ".join(changes) + "."
+    else:
+        answer = "No material processing change was detected between the two runs."
+
     evidence = (
         f"Feature changes: {feature_changes}",
         f"Model score delta: {(previous_model_score, current_model_score)}",
-        f"Alert state changed: {(previous.has_alert(), current.has_alert())}",
+        f"Alert state changed: {(previous_alert, current_alert)}",
     )
     return TraceExplanation(
         trace_id=current.trace_id,
