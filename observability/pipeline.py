@@ -9,7 +9,10 @@ from shared.observability.trace import AMLTrace, AMLTraceEvent, TraceEventType, 
 
 from .collector import InMemoryTraceCollector
 
-HIGH_RISK_JURISDICTIONS = {"IRN", "PRK", "RUS", "SYR", "UAE"}
+# Illustrative risk list for the synthetic PoC only.
+# It is intentionally not a normative or current regulatory reference.
+ILLUSTRATIVE_HIGH_RISK_JURISDICTIONS = {"IRN", "PRK", "RUS", "SYR"}
+ALERT_THRESHOLD = 0.80
 
 
 @dataclass(frozen=True)
@@ -42,6 +45,8 @@ def run_transaction(
     """Process one synthetic transaction through the five-layer lifecycle."""
     trace_id = f"tx-{transaction.transaction_id}"
     event_counter = 0
+    # The PoC keeps spans in a linear parent chain for readability.
+    # A production topology would typically branch from shared parent spans.
     last_span_id: str | None = None
 
     def emit(
@@ -81,7 +86,9 @@ def run_transaction(
         else 0.0
     )
     jurisdiction_risk = (
-        "high" if transaction.beneficiary_jurisdiction in HIGH_RISK_JURISDICTIONS else "standard"
+        "high"
+        if transaction.beneficiary_jurisdiction in ILLUSTRATIVE_HIGH_RISK_JURISDICTIONS
+        else "standard"
     )
     missing_fields = 0 if transaction.beneficiary_lei else 1
     data_quality_score = 0.91 if missing_fields == 1 else 0.98
@@ -93,8 +100,9 @@ def run_transaction(
         + min(amount_multiple / 10.0, 0.28)
         + (0.08 if transaction.pep_flag else 0.0),
     )
-    combined_score = round((0.65 if rule_triggered else 0.0) + (0.35 * model_score), 2)
-    alert_created = rule_triggered or model_score >= 0.80
+    rule_override_score = ALERT_THRESHOLD if rule_triggered else 0.0
+    combined_score = round(max(model_score, rule_override_score), 2)
+    alert_created = combined_score >= ALERT_THRESHOLD
 
     emit(
         layer=TraceLayer.DATA_SOURCES,
@@ -149,7 +157,8 @@ def run_transaction(
         decision_artifacts={
             "model_score": round(model_score, 2),
             "combined_score": combined_score,
-            "alert_threshold": 0.80,
+            "alert_threshold": ALERT_THRESHOLD,
+            "rule_override_score": rule_override_score,
         },
         confidence=ConfidenceLevel.from_score(model_score),
     )
@@ -163,6 +172,8 @@ def run_transaction(
                 "priority": "medium",
                 "rule_triggered": rule_triggered,
                 "model_score": round(model_score, 2),
+                "combined_score": combined_score,
+                "alert_threshold": ALERT_THRESHOLD,
             },
         )
     else:
@@ -173,7 +184,8 @@ def run_transaction(
             decision_artifacts={
                 "rule_triggered": rule_triggered,
                 "model_score": round(model_score, 2),
-                "alert_threshold": 0.80,
+                "combined_score": combined_score,
+                "alert_threshold": ALERT_THRESHOLD,
             },
         )
 
