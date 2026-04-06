@@ -1,0 +1,4 @@
+{"amount_eur": 48200.0, "beneficiary_jurisdiction": "IRN", "beneficiary_lei": null, "customer_avg_monthly_eur": 12400.0, "customer_id": "cust-001", "pep_flag": false, "transaction_id": "tx-001"}
+{"amount_eur": 1800.0, "beneficiary_jurisdiction": "DEU", "beneficiary_lei": "529900T8BM49AURSDO55", "customer_avg_monthly_eur": 3000.0, "customer_id": "cust-002", "pep_flag": false, "transaction_id": "tx-002"}
+{"amount_eur": 22000.0, "beneficiary_jurisdiction": "RUS", "beneficiary_lei": null, "customer_avg_monthly_eur": 5000.0, "customer_id": "cust-003", "pep_flag": true, "transaction_id": "tx-003"}
+{"amount_eur": 6500.0, "beneficiary_jurisdiction": "FRA", "beneficiary_lei": null, "customer_avg_monthly_eur": 2500.0, "customer_id": "cust-004", "pep_flag": false, "transaction_id": "tx-004"}
