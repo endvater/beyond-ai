@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 from observability.models import RetentionDecision
-from observability.privacy import decide_trace_retention, selective_trace_retention
+from observability.privacy import (
+    apply_trace_retention,
+    decide_trace_retention,
+    selective_trace_retention,
+)
+from observability.scripts.run_demo import read_jsonl
 from observability.trace import (
     AMLTrace,
     AMLTraceEvent,
@@ -26,8 +32,30 @@ def test_non_alert_trace_defaults_to_summary_retention():
         events=(
             AMLTraceEvent(
                 trace_id="tx-sample",
-                span_id="span-1",
+                span_id="span-0",
                 parent_span_id=None,
+                layer=TraceLayer.DATA_SOURCES,
+                event_type=TraceEventType.RECEIVED,
+                timestamp=datetime.now(timezone.utc),
+                entity_type="transaction",
+                entity_id="sample",
+                summary="Transaction received.",
+            ),
+            AMLTraceEvent(
+                trace_id="tx-sample",
+                span_id="span-0b",
+                parent_span_id="span-0",
+                layer=TraceLayer.INGESTION,
+                event_type=TraceEventType.INGESTED,
+                timestamp=datetime.now(timezone.utc),
+                entity_type="transaction",
+                entity_id="sample",
+                summary="Transaction ingested.",
+            ),
+            AMLTraceEvent(
+                trace_id="tx-sample",
+                span_id="span-1",
+                parent_span_id="span-0b",
                 layer=TraceLayer.TRANSFORMATION,
                 event_type=TraceEventType.FEATURES_DERIVED,
                 timestamp=datetime.now(timezone.utc),
@@ -41,6 +69,18 @@ def test_non_alert_trace_defaults_to_summary_retention():
                 span_id="span-2",
                 parent_span_id="span-1",
                 layer=TraceLayer.DETECTION,
+                event_type=TraceEventType.RULE_EVALUATED,
+                timestamp=datetime.now(timezone.utc),
+                entity_type="transaction",
+                entity_id="sample",
+                summary="Rules evaluated.",
+                decision_artifacts={"triggered_rules": [], "evaluated_rules": ["R-17"]},
+            ),
+            AMLTraceEvent(
+                trace_id="tx-sample",
+                span_id="span-3",
+                parent_span_id="span-2",
+                layer=TraceLayer.DETECTION,
                 event_type=TraceEventType.MODEL_SCORED,
                 timestamp=datetime.now(timezone.utc),
                 entity_type="transaction",
@@ -50,8 +90,8 @@ def test_non_alert_trace_defaults_to_summary_retention():
             ),
             AMLTraceEvent(
                 trace_id="tx-sample",
-                span_id="span-3",
-                parent_span_id="span-2",
+                span_id="span-4",
+                parent_span_id="span-3",
                 layer=TraceLayer.DETECTION,
                 event_type=TraceEventType.NO_ALERT,
                 timestamp=datetime.now(timezone.utc),
@@ -70,13 +110,22 @@ def test_non_alert_trace_defaults_to_summary_retention():
         summary=decision.summary,
     )
 
-    minimized = selective_trace_retention(trace)
+    decision, minimized = apply_trace_retention(trace)
+    assert decision.mode == "summary"
     assert len(minimized.events) == 3
     assert all(
         event.event_type in {
             TraceEventType.FEATURES_DERIVED,
             TraceEventType.MODEL_SCORED,
             TraceEventType.NO_ALERT,
+        }
+        for event in minimized.events
+    )
+    assert not any(
+        event.event_type in {
+            TraceEventType.RECEIVED,
+            TraceEventType.INGESTED,
+            TraceEventType.RULE_EVALUATED,
         }
         for event in minimized.events
     )
@@ -103,3 +152,17 @@ def test_alert_trace_keeps_full_retention():
     decision = decide_trace_retention(trace)
     assert decision.mode == "full"
     assert selective_trace_retention(trace) == trace
+
+
+def test_read_jsonl_raises_helpful_error_for_missing_fixture():
+    missing_path = Path("/tmp/does-not-exist-observability-fixture.jsonl")
+
+    try:
+        read_jsonl(missing_path)
+    except FileNotFoundError as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Expected FileNotFoundError for missing fixture path")
+
+    assert "generate_synthetic_data" in message
+    assert str(missing_path) in message

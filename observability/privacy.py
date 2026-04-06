@@ -45,11 +45,14 @@ def decide_trace_retention(trace: AMLTrace, sampled: bool = False) -> RetentionD
     )
 
 
-def selective_trace_retention(trace: AMLTrace, sampled: bool = False) -> AMLTrace:
-    """Return either the full trace or a minimized subset."""
+def apply_trace_retention(
+    trace: AMLTrace,
+    sampled: bool = False,
+) -> tuple[RetentionDecision, AMLTrace]:
+    """Return the retention decision together with the retained trace view."""
     decision = decide_trace_retention(trace, sampled=sampled)
     if decision.mode == "full":
-        return trace
+        return decision, trace
 
     retained_types = {
         TraceEventType.FEATURES_DERIVED,
@@ -59,4 +62,10 @@ def selective_trace_retention(trace: AMLTrace, sampled: bool = False) -> AMLTrac
     minimized_events = tuple(
         event for event in trace.events if event.event_type in retained_types
     )
-    return AMLTrace(trace_id=trace.trace_id, events=minimized_events)
+    return decision, AMLTrace(trace_id=trace.trace_id, events=minimized_events)
+
+
+def selective_trace_retention(trace: AMLTrace, sampled: bool = False) -> AMLTrace:
+    """Return either the full trace or a minimized subset."""
+    _, retained_trace = apply_trace_retention(trace, sampled=sampled)
+    return retained_trace

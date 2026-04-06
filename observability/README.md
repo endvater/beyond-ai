@@ -351,9 +351,9 @@ Qualitaet und Impact sprechen.
   Compliance-nahe Debug-Fragen wie `why_flagged`, `why_not_flagged` und
   `what_changed`.
 - `scripts/run_demo.py`
-  Ein lauffaehiger Demo-Einstieg mit JSONL-Daten.
+  Ein lauffaehiger Demo-Einstieg mit den eingecheckten JSONL-Fixtures.
 - `notebooks/walkthrough.ipynb`
-  Ein kleines Schaufenster fuer Reviewer, Demos und Paper-Walkthroughs.
+  Ein ausgefuelltes Schaufenster fuer Reviewer, Demos und Paper-Walkthroughs.
 
 Damit ist der Layer nicht mehr nur Architekturtext, sondern ein kleiner,
 testbarer Implementierungs-Blueprint fuer AML Observability.
@@ -367,6 +367,9 @@ Aus dem Repo-Root:
 ```bash
 python3 -m observability.scripts.run_demo
 ```
+
+Die Demo nutzt standardmaessig die eingecheckten Dateien in
+`observability/data/`.
 
 ### Fixtures neu erzeugen
 

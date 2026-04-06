@@ -9,7 +9,7 @@ from pathlib import Path
 from observability.collector import InMemoryTraceCollector
 from observability.models import CaseDisposition, TransactionRecord
 from observability.pipeline import run_transaction
-from observability.privacy import decide_trace_retention
+from observability.privacy import apply_trace_retention
 from observability.queries import (
     explain_what_changed,
     explain_why_flagged,
@@ -20,6 +20,12 @@ from observability.trace import TraceEventType
 
 def read_jsonl(path: Path) -> list[dict[str, object]]:
     """Read JSONL records from disk."""
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Fixture file not found: {path}. "
+            "Run 'python3 -m observability.scripts.generate_synthetic_data' "
+            "or pass an explicit --transactions/--cases path."
+        )
     with path.open("r", encoding="utf-8") as handle:
         return [json.loads(line) for line in handle if line.strip()]
 
@@ -85,8 +91,12 @@ def main() -> None:
             explanation = explain_why_not_flagged(trace)
         print(explanation.answer)
 
-        retention = decide_trace_retention(trace)
+        retention, retained_trace = apply_trace_retention(trace)
         print(f"retention: {retention.mode} ({retention.reason})")
+        if len(retained_trace.events) != len(trace.events):
+            print(
+                f"retained events: {len(retained_trace.events)} of {len(trace.events)}"
+            )
         case_event = trace.latest(TraceEventType.CASE_DISPOSITIONED)
         if case_event is not None:
             print(f"case feedback: {case_event.decision_artifacts.get('feedback_label')}")
