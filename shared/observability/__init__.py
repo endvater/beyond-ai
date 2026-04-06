@@ -8,12 +8,17 @@ from .models import (
     QualitySignal,
     SurfaceTarget,
 )
+from .trace import AMLTrace, AMLTraceEvent, TraceEventType, TraceLayer
 
 __all__ = [
+    "AMLTrace",
+    "AMLTraceEvent",
     "CorrelationHandle",
     "CorrelationMethod",
     "IncidentSeverity",
     "QualityDomain",
     "QualitySignal",
     "SurfaceTarget",
+    "TraceEventType",
+    "TraceLayer",
 ]

@@ -56,11 +56,33 @@ Detection Integrity     Data Trust         Service Health
 - `CorrelationHandle`
 - `IncidentSeverity`
 - `SurfaceTarget`
+- `AMLTraceEvent`
+- `AMLTrace`
 
 Diese Modelle liegen in `shared/observability/` und sind bewusst
 moduluebergreifend formuliert: Der Sanctions Screener, der Horizon Scanner und
 spaetere Graph- oder Workflow-Komponenten sollen dieselbe Sprache fuer
 Qualitaet und Impact sprechen.
+
+## Minimaler PoC
+
+Der Blueprint enthaelt jetzt einen kleinen technischen Kern fuer das Paper und
+fuer spaetere Demos:
+
+- `shared/observability/trace.py`
+  Formale Trace-Objekte mit `trace_id`, `span_id`, `parent_span_id`, Layer und
+  Event-Typ.
+- `observability/collector.py`
+  In-Memory-Collector fuer JSONL-nahe Eventstroeme.
+- `observability/pipeline.py`
+  Synthetische Fuenf-Layer-Pipeline mit Regelpfad, Modellscore und
+  Case-Feedback.
+- `observability/queries.py`
+  Compliance-nahe Fragen wie `why_flagged`, `why_not_flagged` und
+  `what_changed`.
+
+Damit ist der Layer nicht mehr nur Architekturtext, sondern ein kleiner,
+testbarer Implementierungs-Blueprint fuer AML Observability.
 
 ## Was dieser Layer bewusst nicht ist
 
