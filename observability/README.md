@@ -78,9 +78,12 @@ observability/
 
 ## Mermaid-Datenmodell
 
+<details>
+<summary>Datenmodell aufklappen</summary>
+
 ```mermaid
 classDiagram
-direction LR
+direction TB
 
 class TransactionRecord {
   +str transaction_id
@@ -231,10 +234,15 @@ CorrelationHandle --> CorrelationMethod
 CorrelationHandle --> ConfidenceLevel
 ```
 
+</details>
+
 ## Mermaid-Flowchart
 
+<details>
+<summary>Flowchart aufklappen</summary>
+
 ```mermaid
-flowchart LR
+flowchart TD
     A["TransactionRecord
     transaction_id
     customer_id
@@ -305,6 +313,8 @@ flowchart LR
     reason
     summary payload"]
 ```
+
+</details>
 
 ## Kernartefakte
 
