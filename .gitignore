@@ -14,6 +14,8 @@ venv/
 
 # Data (bulk downloads, not tracked)
 data/
+!observability/data/
+!observability/data/*.jsonl
 *.csv
 *.json.gz
 !.env.example
