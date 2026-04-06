@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from shared.observability.trace import AMLTrace, TraceEventType
+from .trace import AMLTrace, TraceEventType
 
 
 @dataclass(frozen=True)
