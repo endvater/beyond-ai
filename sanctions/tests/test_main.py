@@ -3,7 +3,9 @@ Beyond AI — Sanctions Screener Tests
 Sprint 1: Grundlegende Unit-Tests ohne externe Services.
 """
 
+import base64
 import html
+import os
 from unittest.mock import AsyncMock, Mock, patch
 
 import httpx
@@ -12,7 +14,15 @@ from fastapi.testclient import TestClient
 
 from sanctions.src.main import APP_VERSION, _query_yente, app
 
+os.environ["BEYOND_AI_BASIC_AUTH_USER"] = "tester"
+os.environ["BEYOND_AI_BASIC_AUTH_PASSWORD"] = "topsecret"
+
 client = TestClient(app)
+
+
+def auth_headers() -> dict[str, str]:
+    token = base64.b64encode(b"tester:topsecret").decode("ascii")
+    return {"Authorization": f"Basic {token}"}
 
 
 def test_health():
@@ -27,18 +37,20 @@ def test_health():
 
 def test_search_ui_empty():
     """Leere Suche liefert HTML mit Suchfeld."""
-    response = client.get("/search")
+    response = client.get("/search", headers=auth_headers())
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert "Beyond AI" in response.text
     assert "Sanctions" in response.text
+    assert response.headers["cache-control"].startswith("no-store")
 
 
-def test_search_ui_with_query():
-    """Suche mit Query — yente nicht erreichbar → Fehlermeldung in HTML."""
-    response = client.get("/search?q=TestPerson")
+def test_search_ui_get_does_not_process_query_string():
+    """GET rendert nur die Seite und verarbeitet keine sensiblen Query-Strings."""
+    response = client.get("/search?q=TestPerson", headers=auth_headers())
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
+    assert "TestPerson" not in response.text
 
 
 def test_search_ui_escapes_query_and_result_fields():
@@ -55,7 +67,7 @@ def test_search_ui_escapes_query_and_result_fields():
     ]
 
     with patch("sanctions.src.main._query_yente", new=AsyncMock(return_value=mock_results)):
-        response = client.get("/search", params={"q": payload})
+        response = client.post("/search", data={"q": payload}, headers=auth_headers())
 
     assert response.status_code == 200
     assert payload not in response.text
@@ -69,12 +81,18 @@ def test_search_ui_escapes_query_and_result_fields():
 def test_search_ui_whitespace_query_shows_validation_error():
     """Whitespace-only Queries duerfen nicht als cleanes Screening erscheinen."""
     with patch("sanctions.src.main._query_yente", new=AsyncMock()) as query_mock:
-        response = client.get("/search", params={"q": "   "})
+        response = client.post("/search", data={"q": "   "}, headers=auth_headers())
 
     assert response.status_code == 200
     query_mock.assert_not_called()
     assert "Bitte einen Namen eingeben." in response.text
     assert "Keine Treffer" not in response.text
+
+
+def test_search_requires_authentication():
+    response = client.get("/search")
+    assert response.status_code == 401
+    assert response.json() == {"detail": "authentication required"}
 
 
 @pytest.mark.asyncio
@@ -125,6 +143,7 @@ async def test_screen_endpoint_mocked():
         response = client.post(
             "/api/screen",
             json={"name": "Wladimir Putin"},
+            headers=auth_headers(),
         )
 
     assert response.status_code == 200
@@ -142,6 +161,7 @@ async def test_screen_no_matches():
         response = client.post(
             "/api/screen",
             json={"name": "Max Mustermann"},
+            headers=auth_headers(),
         )
 
     assert response.status_code == 200
@@ -159,21 +179,37 @@ def test_screen_timeout_returns_gateway_timeout():
         response = client.post(
             "/api/screen",
             json={"name": "Max Mustermann"},
+            headers=auth_headers(),
         )
 
     assert response.status_code == 504
-    assert response.json() == {
-        "detail": "yente request timed out at http://localhost:8100."
-    }
+    assert response.json() == {"detail": "screening backend timed out"}
 
 
 def test_screen_blank_name_rejected():
     """Leere oder whitespace-only Namen sind ungueltig."""
-    response = client.post("/api/screen", json={"name": "   "})
+    response = client.post("/api/screen", json={"name": "   "}, headers=auth_headers())
     assert response.status_code == 422
 
 
 def test_screen_missing_body():
     """Fehlender Body → 422 Validation Error."""
-    response = client.post("/api/screen", json={})
+    response = client.post("/api/screen", json={}, headers=auth_headers())
     assert response.status_code == 422
+
+
+def test_screen_threshold_bounds_enforced():
+    response = client.post(
+        "/api/screen",
+        json={"name": "Max Mustermann", "threshold": 1.5},
+        headers=auth_headers(),
+    )
+    assert response.status_code == 422
+
+
+def test_status_endpoint_sanitizes_errors():
+    response = client.get("/api/status", headers=auth_headers())
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] in {"ok", "degraded"}
+    assert "error:" not in response.text

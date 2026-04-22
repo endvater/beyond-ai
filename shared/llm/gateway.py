@@ -5,10 +5,13 @@ Unified interface for LLM calls. Ollama as primary, Claude API as fallback.
 Follows FinRegAgents confidence-aware pattern.
 """
 
+import logging
 import os
 from dataclasses import dataclass
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -31,6 +34,7 @@ class LLMGateway:
         claude_api_key: str | None = None,
         claude_model: str = "claude-sonnet-4-20250514",
         timeout: float = 60.0,
+        allow_external_fallback: bool | None = None,
     ):
         self.ollama_url = ollama_url or os.getenv(
             "OLLAMA_URL", "http://localhost:11434"
@@ -41,6 +45,11 @@ class LLMGateway:
         self.claude_api_key = claude_api_key or os.getenv("ANTHROPIC_API_KEY")
         self.claude_model = claude_model
         self.timeout = timeout
+        if allow_external_fallback is None:
+            allow_external_fallback = os.getenv(
+                "BEYOND_AI_ALLOW_EXTERNAL_LLM_FALLBACK", ""
+            ).strip().lower() in {"1", "true", "yes", "on"}
+        self.allow_external_fallback = allow_external_fallback
         self._client = httpx.Client(timeout=timeout)
 
     async def complete(
@@ -56,10 +65,16 @@ class LLMGateway:
                 prompt, system, temperature, max_tokens
             )
         except Exception:
-            if self.claude_api_key:
+            if self.allow_external_fallback and self.claude_api_key:
+                logger.warning(
+                    "Falling back to external Claude provider after Ollama failure."
+                )
                 return await self._claude_complete(
                     prompt, system, temperature, max_tokens
                 )
+            logger.warning(
+                "Ollama request failed and external fallback is disabled or unconfigured."
+            )
             raise
 
     async def _ollama_complete(

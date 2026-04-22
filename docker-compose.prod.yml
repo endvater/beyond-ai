@@ -23,12 +23,15 @@ services:
       - "9200"
     environment:
       discovery.type: single-node
-      xpack.security.enabled: "false"
+      xpack.security.enabled: "true"
+      xpack.security.autoconfiguration.enabled: "false"
+      xpack.security.http.ssl.enabled: "false"
+      ELASTIC_PASSWORD: ${YENTE_ES_PASSWORD:?Set YENTE_ES_PASSWORD in .env}
       ES_JAVA_OPTS: "-Xms1g -Xmx1g"        # KVM 2 (bei Upgrade auf KVM 4 → -Xms2g -Xmx2g)
     volumes:
       - yente_es_data:/usr/share/elasticsearch/data
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:9200/_cluster/health"]
+      test: ["CMD-SHELL", "curl -sf -u elastic:$$ELASTIC_PASSWORD http://localhost:9200/_cluster/health >/dev/null"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -48,7 +51,7 @@ services:
       yente-es:
         condition: service_healthy
     environment:
-      YENTE_INDEX_URL: http://yente-es:9200
+      YENTE_INDEX_URL: http://elastic:${YENTE_ES_PASSWORD:?Set YENTE_ES_PASSWORD in .env}@yente-es:9200
       YENTE_MANIFEST: /data/manifest.yml
     volumes:
       - ./data/yente:/data:ro
@@ -80,6 +83,13 @@ services:
       OLLAMA_MODEL:   kimi-k2.5:cloud
       # Optional: Claude API als Fallback
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      BEYOND_AI_AUTH_REQUIRED: ${BEYOND_AI_AUTH_REQUIRED:-true}
+      BEYOND_AI_BASIC_AUTH_USER: ${BEYOND_AI_BASIC_AUTH_USER:?Set BEYOND_AI_BASIC_AUTH_USER in .env}
+      BEYOND_AI_BASIC_AUTH_PASSWORD: ${BEYOND_AI_BASIC_AUTH_PASSWORD:?Set BEYOND_AI_BASIC_AUTH_PASSWORD in .env}
+      BEYOND_AI_RATE_LIMIT_REQUESTS: ${BEYOND_AI_RATE_LIMIT_REQUESTS:-30}
+      BEYOND_AI_RATE_LIMIT_WINDOW_SECONDS: ${BEYOND_AI_RATE_LIMIT_WINDOW_SECONDS:-60}
+      BEYOND_AI_TRUST_PROXY_HEADERS: ${BEYOND_AI_TRUST_PROXY_HEADERS:-true}
+      BEYOND_AI_ALLOW_EXTERNAL_LLM_FALLBACK: ${BEYOND_AI_ALLOW_EXTERNAL_LLM_FALLBACK:-false}
     volumes:
       - ./shared:/app/shared
       - ./sanctions:/app/sanctions

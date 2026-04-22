@@ -71,6 +71,7 @@ python src/api.py
 
 # Einzelnen Namen screenen
 curl -X POST http://localhost:8000/api/screen \
+  -u "$BEYOND_AI_BASIC_AUTH_USER:$BEYOND_AI_BASIC_AUTH_PASSWORD" \
   -H "Content-Type: application/json" \
   -d '{"name": "Wladimir Wladimirowitsch Putin", "threshold": 0.7}'
 
