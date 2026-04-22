@@ -12,6 +12,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY shared/ ./shared/
 COPY sanctions/ ./sanctions/
 
+RUN addgroup --system beyondai && adduser --system --ingroup beyondai beyondai \
+    && chown -R beyondai:beyondai /app
+
+USER beyondai
+
 EXPOSE 8000
 
 CMD ["uvicorn", "sanctions.src.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -125,6 +125,11 @@ git clone https://github.com/endvater/beyond-ai.git
 cd beyond-ai
 
 cp .env.example .env
+# Pflichtfelder in .env setzen:
+# - NEO4J_PASSWORD
+# - YENTE_ES_PASSWORD
+# - BEYOND_AI_BASIC_AUTH_USER
+# - BEYOND_AI_BASIC_AUTH_PASSWORD
 docker compose up -d
 ```
 
@@ -140,6 +145,7 @@ Danach verfügbar:
 
 ```bash
 curl -X POST http://localhost:8000/api/screen \
+  -u "$BEYOND_AI_BASIC_AUTH_USER:$BEYOND_AI_BASIC_AUTH_PASSWORD" \
   -H "Content-Type: application/json" \
   -d '{"name": "Wladimir Putin"}'
 ```
