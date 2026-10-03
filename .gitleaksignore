@@ -1,0 +1,6 @@
+# Geprüfte Fehlalarme (2026-10-03)
+# curl -u mit Variablenreferenz ($$VAR), kein Klartext-Secret
+3c6ebd7782352c9a57532af65c777d61e10c3a17:docker-compose.yml:curl-auth-user:60
+3c6ebd7782352c9a57532af65c777d61e10c3a17:docker-compose.prod.yml:curl-auth-user:34
+# Platzhalter in der Beispielkonfiguration
+5f0c1fa5ea5448007a2b4e7c781b5128a7c17ffb:.env.prod.example:generic-api-key:7
